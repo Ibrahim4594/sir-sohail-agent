@@ -1,7 +1,8 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Composer } from './composer';
+import { PromptInputBox } from '@/components/ai-prompt-box';
+import { ChatFeedback } from '@/components/chat/chat-feedback';
 import { EmptyState } from './empty-state';
 import { MessageList } from './message-list';
 import { PdfPanel } from './pdf-panel';
@@ -85,7 +86,6 @@ export function ChatShell({
         }
       }
 
-      // Make sure we clear streaming state even if meta never arrived.
       updateAssistant((m) => ({ ...m, streaming: false }));
 
       if (!initialId && finalId) router.replace(`/chat/${finalId}`);
@@ -113,11 +113,14 @@ export function ChatShell({
         )}
       </div>
 
-      <div className="shrink-0 px-6 pb-5 pt-2 sm:px-8">
-        <Composer onSend={send} disabled={streaming} />
+      <div className="shrink-0 px-6 pb-6 pt-3 sm:px-10 lg:px-16">
+        <div className="mx-auto max-w-3xl">
+          <PromptInputBox onSend={send} isLoading={streaming} />
+        </div>
       </div>
 
       <PdfPanel citation={panelCitation} onClose={() => setPanelCitation(null)} />
+      <ChatFeedback />
     </div>
   );
 }
