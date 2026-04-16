@@ -51,6 +51,9 @@ yarn-error.log*
 # Installed design skills (from `skills add <repo>`) — regenerate on demand
 .agents/
 
+# Firecrawl scrape artifacts — research-only, never source-controlled
+.firecrawl/
+
 # OS
 .DS_Store
 Thumbs.db

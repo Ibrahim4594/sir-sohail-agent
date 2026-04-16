@@ -11,9 +11,11 @@ import type { Citation, StreamEvent, UIMessage } from './types';
 export function ChatShell({
   initialId,
   initialMessages,
+  displayName,
 }: {
   initialId?: string;
   initialMessages: UIMessage[];
+  displayName?: string;
 }) {
   const router = useRouter();
   const [messages, setMessages] = useState<UIMessage[]>(initialMessages);
@@ -107,7 +109,7 @@ export function ChatShell({
     <div className="flex h-full flex-col">
       <div className="flex-1 overflow-hidden">
         {messages.length === 0 ? (
-          <EmptyState onPick={send} />
+          <EmptyState onPick={send} displayName={displayName} />
         ) : (
           <MessageList messages={messages} onOpenCitation={setPanelCitation} />
         )}
