@@ -28,7 +28,10 @@ Any change that weakens any of these safeguards needs explicit approval.
 | Framework | Next.js 16 (App Router, Turbopack) |
 | Language | TypeScript (strict) |
 | Styling | Tailwind 4 |
-| UI components | shadcn/ui on top of `@base-ui/react` (not Radix) |
+| UI components | shadcn/ui on top of `@base-ui/react` (not Radix) — plus approved peers below |
+| Extra UI libraries (opt-in, per component) | 21st.dev · Magic UI · Aceternity UI · Material UI (MUI) |
+| Scroll / timeline animation | GSAP (+ ScrollTrigger) |
+| Motion-graphic animation | Lottie (JSON exported from After Effects / LottieFiles) |
 | AI layer | Vercel AI SDK v6 |
 | LLM (local/dev) | Ollama — `gemma4:e4b` via `ollama-ai-provider-v2` |
 | LLM (cloud/prod) | Google Gemini — `gemini-flash-latest` via `@ai-sdk/google` |
@@ -153,6 +156,26 @@ where id = (select id from auth.users order by created_at asc limit 1);
 ### Switch to the cloud LLM
 
 Set `LLM_PROVIDER=gemini` in `.env.local` and add your `GEMINI_API_KEY`. Restart the dev server. No code changes required.
+
+## UI & Animation Stack — rules for picking a library
+
+Mix-and-match from this approved list, whichever gives the best result for a specific component or interaction. Read this list **before** designing any new UI piece.
+
+- **shadcn/ui** — the default surface for forms, layout, dialogs, menus, everything accessibility-sensitive. Already installed; extend via `pnpm dlx shadcn@latest add <name>`.
+- **21st.dev** — beautiful, shadcn-compatible components (hero sections, pricing tables, marketing blocks). Install via `pnpm dlx shadcn@latest add <21st.dev URL>`.
+- **Magic UI** (`magicui.design`) — premium animated primitives (marquee, meteors, shimmer buttons, animated beams). shadcn-compatible install flow.
+- **Aceternity UI** (`ui.aceternity.com`) — premium motion components (spotlight, 3D card, moving border, etc.). Usually copy-paste + a `motion` / `framer-motion` peer dep.
+- **Material UI (MUI)** — use only when nothing from the above gets the job done (e.g., complex data tables, specialized form controls). Note: MUI uses `@emotion` while the rest of the stack is Tailwind-first — keep MUI usage surgical to avoid runtime overlap.
+- **GSAP** — for timeline-based, scroll-pinned, or stagger-heavy motion that framer-motion/css can't handle cleanly. Import `ScrollTrigger` when the animation is scroll-driven.
+- **Lottie** — for motion-graphics-style JSON animations exported from After Effects or picked from LottieFiles. Use `lottie-react` in React components.
+
+## Install rule — MANDATORY
+
+**No package gets installed without explicit user approval.** Before running `pnpm add`, `pnpm dlx`, or any command that adds a dependency (including a shadcn component fetch that pulls a new peer), stop and propose:
+
+> "To build X, I want to install Y [plus peer deps Z]. OK?"
+
+Wait for yes. This applies equally to a 21st.dev component, a Magic UI animation, an Aceternity snippet, or a single npm utility. No surprises.
 
 ## Conventions
 

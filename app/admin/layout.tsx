@@ -7,11 +7,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) notFound();
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single();
   if (!profile || profile.role !== 'admin') notFound();
-  return <div className="mx-auto max-w-5xl p-8">{children}</div>;
+
+  return <div className="min-h-full">{children}</div>;
 }

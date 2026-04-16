@@ -1,27 +1,49 @@
 'use client';
 import { useEffect, useRef } from 'react';
-import { MessageItem } from './message-item';
-import type { UIMessage } from './types';
+import { Message } from './message';
+import type { Citation, UIMessage } from './types';
 
 export function MessageList({
   messages,
   onOpenCitation,
 }: {
   messages: UIMessage[];
-  onOpenCitation: (c: NonNullable<UIMessage['citations']>[number]) => void;
+  onOpenCitation: (c: Citation) => void;
 }) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new messages or streamed chunks arrive,
+  // unless the user has scrolled up manually.
+  const lastContent = messages[messages.length - 1]?.content ?? '';
   const count = messages.length;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on message count change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-scroll on count or latest content change
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [count]);
+    const c = containerRef.current;
+    if (!c) return;
+    const distanceFromBottom = c.scrollHeight - c.clientHeight - c.scrollTop;
+    if (distanceFromBottom < 180) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [count, lastContent]);
+
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 pb-40 pt-6">
-      {messages.map((m) => (
-        <MessageItem key={m.id} message={m} onOpenCitation={onOpenCitation} />
-      ))}
-      <div ref={bottomRef} />
+    <div
+      ref={containerRef}
+      className="h-full overflow-y-auto"
+      style={{ scrollbarGutter: 'stable' }}
+    >
+      <div className="pb-48 pt-6">
+        {messages.map((m, i) => (
+          <Message
+            key={m.id}
+            message={m}
+            onOpenCitation={onOpenCitation}
+            isFirst={i === 0 || messages[i - 1]?.role !== 'assistant'}
+          />
+        ))}
+        <div ref={bottomRef} />
+      </div>
     </div>
   );
 }

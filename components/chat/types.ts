@@ -1,15 +1,24 @@
+export type Citation = {
+  marker: number;
+  chunkId: string | null;
+  documentId: string | null;
+  documentTitle: string | null;
+  documentFilename: string | null;
+  pageNumber: number | null;
+  snippet: string | null;
+  valid: boolean;
+};
+
 export type UIMessage = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  citations?: {
-    marker: number;
-    chunkId: string | null;
-    documentId: string | null;
-    documentTitle: string | null;
-    documentFilename: string | null;
-    pageNumber: number | null;
-    snippet: string | null;
-    valid: boolean;
-  }[];
+  citations?: Citation[];
+  streaming?: boolean;
+  error?: string | null;
 };
+
+export type StreamEvent =
+  | { type: 'text'; value: string }
+  | { type: 'meta'; conversationId: string; citations: Citation[] }
+  | { type: 'error'; message: string };

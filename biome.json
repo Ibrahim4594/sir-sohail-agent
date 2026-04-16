@@ -11,6 +11,7 @@
       "!pdfs",
       "!next-env.d.ts",
       "!components/ui",
+      "!lib/supabase/types.ts",
       "!test-results",
       "!playwright-report"
     ]

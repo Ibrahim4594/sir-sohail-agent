@@ -1,36 +1,35 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { PdfSidePanel } from '@/components/pdf/pdf-side-panel';
 import { Composer } from './composer';
+import { EmptyState } from './empty-state';
 import { MessageList } from './message-list';
-import type { UIMessage } from './types';
-
-type CitationType = NonNullable<UIMessage['citations']>[number];
-
-type StreamEvent =
-  | { type: 'text'; value: string }
-  | { type: 'meta'; conversationId: string; citations: CitationType[] }
-  | { type: 'error'; message: string };
+import { PdfPanel } from './pdf-panel';
+import type { Citation, StreamEvent, UIMessage } from './types';
 
 export function ChatShell({
-  conversationId: initialId,
+  initialId,
   initialMessages,
 }: {
-  conversationId?: string;
+  initialId?: string;
   initialMessages: UIMessage[];
 }) {
   const router = useRouter();
   const [messages, setMessages] = useState<UIMessage[]>(initialMessages);
   const [streaming, setStreaming] = useState(false);
-  const [panelCitation, setPanelCitation] = useState<CitationType | null>(null);
   const [convId, setConvId] = useState<string | undefined>(initialId);
+  const [panelCitation, setPanelCitation] = useState<Citation | null>(null);
 
   async function send(text: string) {
+    const snapshot = messages;
     const userMsg: UIMessage = { id: crypto.randomUUID(), role: 'user', content: text };
     const assistantId = crypto.randomUUID();
-    const assistantMsg: UIMessage = { id: assistantId, role: 'assistant', content: '' };
-    const snapshot = messages;
+    const assistantMsg: UIMessage = {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      streaming: true,
+    };
 
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setStreaming(true);
@@ -47,7 +46,10 @@ export function ChatShell({
           messages: [...snapshot, userMsg].map(({ role, content }) => ({ role, content })),
         }),
       });
-      if (!res.ok || !res.body) throw new Error(`Chat request failed (${res.status})`);
+
+      if (!res.ok || !res.body) {
+        throw new Error(`Chat request failed (${res.status})`);
+      }
 
       const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
       let buffer = '';
@@ -61,28 +63,40 @@ export function ChatShell({
         buffer = lines.pop() ?? '';
         for (const line of lines) {
           if (!line.trim()) continue;
-          const event = JSON.parse(line) as StreamEvent;
+          let event: StreamEvent;
+          try {
+            event = JSON.parse(line) as StreamEvent;
+          } catch {
+            continue;
+          }
           if (event.type === 'text') {
             updateAssistant((m) => ({ ...m, content: m.content + event.value }));
           } else if (event.type === 'meta') {
             finalId = event.conversationId;
             if (!convId) setConvId(event.conversationId);
-            updateAssistant((m) => ({ ...m, citations: event.citations }));
-          } else if (event.type === 'error') {
             updateAssistant((m) => ({
               ...m,
-              content: `${m.content}\n\n[The response was cut off: ${event.message}]`,
+              citations: event.citations,
+              streaming: false,
             }));
+          } else if (event.type === 'error') {
+            updateAssistant((m) => ({ ...m, error: event.message, streaming: false }));
           }
         }
       }
 
+      // Make sure we clear streaming state even if meta never arrived.
+      updateAssistant((m) => ({ ...m, streaming: false }));
+
       if (!initialId && finalId) router.replace(`/chat/${finalId}`);
+      router.refresh();
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       updateAssistant((m) => ({
         ...m,
-        content: m.content || `Error: ${message}`,
+        streaming: false,
+        content: m.content,
+        error: message,
       }));
     } finally {
       setStreaming(false);
@@ -90,16 +104,20 @@ export function ChatShell({
   }
 
   return (
-    <div className="grid h-full grid-cols-1 lg:grid-cols-[1fr_420px]">
-      <div className="flex h-full flex-col">
-        <div className="flex-1 overflow-y-auto">
+    <div className="flex h-full flex-col">
+      <div className="flex-1 overflow-hidden">
+        {messages.length === 0 ? (
+          <EmptyState onPick={send} />
+        ) : (
           <MessageList messages={messages} onOpenCitation={setPanelCitation} />
-        </div>
-        <div className="border-t bg-background/60 p-3 backdrop-blur">
-          <Composer onSend={send} disabled={streaming} />
-        </div>
+        )}
       </div>
-      <PdfSidePanel citation={panelCitation} onClose={() => setPanelCitation(null)} />
+
+      <div className="shrink-0 px-6 pb-5 pt-2 sm:px-8">
+        <Composer onSend={send} disabled={streaming} />
+      </div>
+
+      <PdfPanel citation={panelCitation} onClose={() => setPanelCitation(null)} />
     </div>
   );
 }

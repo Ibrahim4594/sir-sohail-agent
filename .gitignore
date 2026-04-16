@@ -32,8 +32,8 @@ next-env.d.ts
 # vercel
 .vercel
 
-# seed PDFs — uploaded to Supabase Storage, not source-controlled
-pdfs/*.pdf
+# seed PDFs + any local-only scratch data (e.g. API key notes) — never tracked
+pdfs/
 
 # Supabase local stack state
 supabase/.branches
@@ -44,6 +44,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# Local dev tooling binaries (e.g., Supabase CLI fetched from GitHub)
+.tools/
 
 # OS
 .DS_Store
