@@ -1,32 +1,28 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { createOllama } from 'ollama-ai-provider';
+import type { EmbeddingModel, LanguageModel } from 'ai';
+import { createOllama } from 'ollama-ai-provider-v2';
+import { env } from '@/lib/env';
 
 function getOllama() {
-  return createOllama({
-    baseURL: `${process.env.OLLAMA_BASE_URL || 'http://localhost:11434'}/api`,
-  });
+  return createOllama({ baseURL: `${env().OLLAMA_BASE_URL}/api` });
 }
 
 function getGoogle() {
-  return createGoogleGenerativeAI({
-    apiKey: process.env.GEMINI_API_KEY,
-  });
+  return createGoogleGenerativeAI({ apiKey: env().GEMINI_API_KEY });
 }
 
-export function getChatModel() {
-  const provider = process.env.LLM_PROVIDER || 'ollama';
-  if (provider === 'gemini') {
-    return getGoogle()(process.env.GEMINI_MODEL || 'gemini-flash-latest');
+export function getChatModel(): LanguageModel {
+  const e = env();
+  if (e.LLM_PROVIDER === 'gemini') {
+    return getGoogle()(e.GEMINI_MODEL);
   }
-  return getOllama()(process.env.OLLAMA_MODEL || 'gemma4:e4b');
+  return getOllama()(e.OLLAMA_MODEL);
 }
 
-export function getEmbeddingModel() {
-  const provider = process.env.LLM_PROVIDER || 'ollama';
-  if (provider === 'gemini') {
-    return getGoogle().textEmbeddingModel(
-      process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004',
-    );
+export function getEmbeddingModel(): EmbeddingModel {
+  const e = env();
+  if (e.LLM_PROVIDER === 'gemini') {
+    return getGoogle().textEmbeddingModel(e.GEMINI_EMBEDDING_MODEL);
   }
-  return getOllama().embedding(process.env.OLLAMA_EMBEDDING_MODEL || 'nomic-embed-text');
+  return getOllama().textEmbeddingModel(e.OLLAMA_EMBEDDING_MODEL);
 }

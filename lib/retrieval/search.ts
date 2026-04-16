@@ -1,4 +1,4 @@
-import { type EmbeddingModel, embed } from 'ai';
+import { embed } from 'ai';
 import { env } from '@/lib/env';
 import { getEmbeddingModel } from '@/lib/llm/model';
 import { createServiceRoleSupabase } from '@/lib/supabase/server';
@@ -23,13 +23,12 @@ export async function searchChunks(query: string, opts: SearchOpts = {}): Promis
   const topK = opts.topK ?? e.RETRIEVAL_TOP_K;
   const threshold = opts.similarityThreshold ?? 0;
 
-  const { embedding } = await embed({
-    model: getEmbeddingModel() as unknown as EmbeddingModel,
-    value: query,
-  });
+  const { embedding } = await embed({ model: getEmbeddingModel(), value: query });
 
   const supabase = createServiceRoleSupabase();
   const { data, error } = await supabase.rpc('search_chunks', {
+    // Supabase's generated types represent pgvector as string; the JS client
+    // serializes number[] to the wire format automatically.
     query_embedding: embedding as unknown as string,
     match_count: topK,
     similarity_threshold: threshold,

@@ -8,6 +8,11 @@ import type { UIMessage } from './types';
 
 type CitationType = NonNullable<UIMessage['citations']>[number];
 
+type StreamEvent =
+  | { type: 'text'; value: string }
+  | { type: 'meta'; conversationId: string; citations: CitationType[] }
+  | { type: 'error'; message: string };
+
 export function ChatShell({
   conversationId: initialId,
   initialMessages,
@@ -25,9 +30,13 @@ export function ChatShell({
     const userMsg: UIMessage = { id: crypto.randomUUID(), role: 'user', content: text };
     const assistantId = crypto.randomUUID();
     const assistantMsg: UIMessage = { id: assistantId, role: 'assistant', content: '' };
+    const snapshot = messages;
 
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setStreaming(true);
+
+    const updateAssistant = (fn: (m: UIMessage) => UIMessage) =>
+      setMessages((prev) => prev.map((m) => (m.id === assistantId ? fn(m) : m)));
 
     try {
       const res = await fetch('/api/chat', {
@@ -35,14 +44,15 @@ export function ChatShell({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           conversationId: convId,
-          messages: [...messages, userMsg].map(({ role, content }) => ({ role, content })),
+          messages: [...snapshot, userMsg].map(({ role, content }) => ({ role, content })),
         }),
       });
-      if (!res.ok || !res.body) throw new Error(`Chat failed: ${res.status}`);
+      if (!res.ok || !res.body) throw new Error(`Chat request failed (${res.status})`);
 
       const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
       let buffer = '';
-      let nextId = convId;
+      let finalId: string | undefined = convId;
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -51,29 +61,29 @@ export function ChatShell({
         buffer = lines.pop() ?? '';
         for (const line of lines) {
           if (!line.trim()) continue;
-          const event = JSON.parse(line) as
-            | { type: 'text'; value: string }
-            | { type: 'meta'; conversationId: string; citations: CitationType[] };
+          const event = JSON.parse(line) as StreamEvent;
           if (event.type === 'text') {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantId ? { ...m, content: m.content + event.value } : m,
-              ),
-            );
+            updateAssistant((m) => ({ ...m, content: m.content + event.value }));
           } else if (event.type === 'meta') {
-            nextId = event.conversationId;
+            finalId = event.conversationId;
             if (!convId) setConvId(event.conversationId);
-            setMessages((prev) =>
-              prev.map((m) => (m.id === assistantId ? { ...m, citations: event.citations } : m)),
-            );
+            updateAssistant((m) => ({ ...m, citations: event.citations }));
+          } else if (event.type === 'error') {
+            updateAssistant((m) => ({
+              ...m,
+              content: `${m.content}\n\n[The response was cut off: ${event.message}]`,
+            }));
           }
         }
       }
-      if (!initialId && nextId) router.replace(`/chat/${nextId}`);
+
+      if (!initialId && finalId) router.replace(`/chat/${finalId}`);
     } catch (e) {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === assistantId ? { ...m, content: `Error: ${String(e)}` } : m)),
-      );
+      const message = e instanceof Error ? e.message : String(e);
+      updateAssistant((m) => ({
+        ...m,
+        content: m.content || `Error: ${message}`,
+      }));
     } finally {
       setStreaming(false);
     }

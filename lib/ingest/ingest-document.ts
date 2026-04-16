@@ -1,4 +1,4 @@
-import { type EmbeddingModel, embedMany } from 'ai';
+import { embedMany } from 'ai';
 import { getEmbeddingModel } from '@/lib/llm/model';
 import { createServiceRoleSupabase } from '@/lib/supabase/server';
 import { chunkPage } from './chunk';
@@ -51,7 +51,7 @@ export async function ingestDocument(input: IngestInput): Promise<IngestResult> 
 
     if (staged.length === 0) throw new Error('No text extracted from PDF');
 
-    const embeddingModel = getEmbeddingModel() as unknown as EmbeddingModel;
+    const embeddingModel = getEmbeddingModel();
     const BATCH = 32;
     const embeddings: number[][] = [];
     for (let i = 0; i < staged.length; i += BATCH) {

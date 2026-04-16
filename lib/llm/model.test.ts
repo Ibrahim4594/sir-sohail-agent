@@ -1,8 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+// env() validates the whole schema, so satisfy all required vars before each test.
+function setBaseEnv() {
+  process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost:54321';
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service';
+}
+
 describe('getChatModel', () => {
   beforeEach(() => {
     vi.resetModules();
+    setBaseEnv();
   });
 
   it('returns an Ollama model when LLM_PROVIDER=ollama', async () => {
