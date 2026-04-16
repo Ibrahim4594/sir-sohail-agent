@@ -48,7 +48,7 @@
   --color-rule: var(--rule);
 
   /* typography — one sans, one mono */
-  --font-sans: var(--font-hanken), "Helvetica Neue", "Arial Nova", system-ui, sans-serif;
+  --font-sans: var(--font-onest), "Helvetica Neue", "Arial Nova", system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), "SF Mono", SFMono-Regular, "Menlo", monospace;
   --font-heading: var(--font-sans);
 

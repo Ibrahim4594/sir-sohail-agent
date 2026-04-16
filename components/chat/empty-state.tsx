@@ -11,22 +11,17 @@ const SUGGESTIONS = [
 
 export function EmptyState({ onPick }: { onPick: (text: string) => void }) {
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-20 sm:px-8">
-      <div className="flex items-center gap-3">
-        <span aria-hidden className="h-px w-10 bg-foreground" />
-        <span className="label label--ink">Begin a conversation</span>
-      </div>
-
-      <h2 className="mt-6 font-display text-[48px] font-[600] leading-[1.02] tracking-[-0.035em] text-foreground sm:text-[64px]">
+    <div className="mx-auto w-full max-w-3xl px-6 py-24 sm:px-8">
+      <h2 className="font-display text-[48px] font-[600] leading-[1.02] tracking-[-0.035em] text-foreground sm:text-[64px]">
         Ask the corpus.
       </h2>
 
       <p className="mt-5 max-w-xl text-[16px] leading-[1.6] text-muted-foreground">
         The assistant reads from a closed library of academic papers. It will quote, summarize, or
-        decline — never invent. Every claim is footnoted with the exact source page.
+        decline — never invent.
       </p>
 
-      <div className="mt-12">
+      <div className="mt-14">
         <p className="label mb-4">A few ways to start</p>
         <ul className="divide-y divide-rule border-y border-rule">
           {SUGGESTIONS.map((s) => (

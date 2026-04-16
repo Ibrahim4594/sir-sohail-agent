@@ -1,25 +1,23 @@
 import type { Metadata, Viewport } from 'next';
-import { Hanken_Grotesk, JetBrains_Mono } from 'next/font/google';
+import { JetBrains_Mono, Onest } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
 /**
- * Hanken Grotesk — our one premium sans. Variable weight + italic.
- * Used for both display and body — one-font system, ChatGPT-style.
- * Free on Google Fonts, but distinctive enough to read as premium.
+ * Onest — contemporary grotesk by Anatoletype. Very clean, variable
+ * weight 300–800, proper italic, distinctive without being loud.
+ * One-font system: used for display and body.
  */
-const hanken = Hanken_Grotesk({
-  variable: '--font-hanken',
+const onest = Onest({
+  variable: '--font-onest',
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  style: ['normal', 'italic'],
+  weight: ['300', '400', '500', '600', '700', '800'],
   display: 'swap',
 });
 
 /**
- * JetBrains Mono — tiny uppercase metadata labels that form the
- * micro-typographic spine of the design. One of the few places
- * monospace feels intentional rather than stylistic.
+ * JetBrains Mono — small-caps metadata labels. The only secondary face;
+ * its presence is what distinguishes us from plain utility UIs.
  */
 const jetbrainsMono = JetBrains_Mono({
   variable: '--font-jetbrains-mono',
@@ -49,7 +47,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${hanken.variable} ${jetbrainsMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${onest.variable} ${jetbrainsMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {children}
         <Toaster />
