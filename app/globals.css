@@ -47,10 +47,12 @@
   --color-paper: var(--paper);
   --color-rule: var(--rule);
 
-  /* typography — one sans, one mono */
-  --font-sans: var(--font-onest), "Helvetica Neue", "Arial Nova", system-ui, sans-serif;
+  /* typography — primary sans, editorial serif (italic accents only), mono */
+  --font-sans: var(--font-instrument-sans), "Helvetica Neue", "Arial Nova", system-ui, sans-serif;
+  --font-serif: var(--font-instrument-serif), "Iowan Old Style", Georgia, serif;
   --font-mono: var(--font-jetbrains-mono), "SF Mono", SFMono-Regular, "Menlo", monospace;
   --font-heading: var(--font-sans);
+  --color-serif: var(--font-serif);
 
   /* radii — measured, never blobby */
   --radius-sm: 2px;
@@ -232,14 +234,23 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* `.font-display` once meant serif. It now means display-weight
-     Hanken with tight tracking — kept as a class so existing call
-     sites don't need to change. Headlines get a small optical bump
-     via font-feature-settings. */
+  /* `.font-display` = Instrument Sans at display sizes with tight
+     tracking. Use `.emph` (italic Instrument Serif) for the single
+     accent word in a hero — this is our premium typographic move. */
   .font-display {
     font-family: var(--font-sans);
-    font-feature-settings: "ss01", "cv11", "kern", "liga", "ss02";
+    font-feature-settings: "ss01", "kern", "liga";
     letter-spacing: -0.02em;
+  }
+
+  /* .emph — italic Instrument Serif for one emphasised word per hero.
+     Pairs with surrounding Instrument Sans, same foundry, shared DNA. */
+  .emph {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-feature-settings: "liga", "dlig", "kern";
+    letter-spacing: -0.01em;
   }
 
   /* Small-caps metadata label. The micro-typographic spine. */

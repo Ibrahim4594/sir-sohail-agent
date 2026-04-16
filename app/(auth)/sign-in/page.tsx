@@ -13,7 +13,7 @@ export default function SignInPage() {
       <section className="flex flex-1 items-center justify-center px-6 py-16 sm:px-10">
         <div className="w-full max-w-[420px]" style={{ animation: 'rise 800ms 120ms both' }}>
           <h1 className="font-display text-[56px] font-[600] leading-[1.02] tracking-[-0.035em] text-foreground">
-            Welcome <span className="italic font-[400] text-muted-foreground">back.</span>
+            Welcome <span className="emph text-muted-foreground">back.</span>
           </h1>
 
           <p className="mt-5 max-w-sm text-[15px] leading-[1.55] text-muted-foreground">

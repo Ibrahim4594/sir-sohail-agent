@@ -27,7 +27,7 @@ export default async function AdminDocumentsPage() {
             <div>
               <p className="label mb-4">Administration</p>
               <h1 className="font-display text-[64px] font-[600] leading-[1.02] tracking-[-0.035em]">
-                The <span className="italic font-[400] text-muted-foreground">Library.</span>
+                The <span className="emph text-muted-foreground">Library.</span>
               </h1>
               <p className="mt-5 max-w-xl text-[14px] leading-[1.6] text-muted-foreground">
                 Upload, parse, chunk, embed, and store a PDF in the corpus. A single document

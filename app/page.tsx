@@ -44,9 +44,8 @@ export default async function Home() {
               className="font-display text-[clamp(2.5rem,7vw,5.75rem)] font-[600] leading-[1.02] tracking-[-0.035em] text-foreground"
               style={{ animation: 'rise 900ms 120ms both' }}
             >
-              A research assistant{' '}
-              <span className="italic font-[500] text-muted-foreground">grounded</span> in a closed
-              library.
+              A research assistant <span className="emph text-muted-foreground">grounded</span> in a
+              closed library.
             </h1>
 
             <p

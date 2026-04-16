@@ -23,7 +23,7 @@ export default async function OverviewPage() {
             <div>
               <p className="label mb-4">Catalogue raisonné</p>
               <h1 className="font-display text-[72px] font-[600] leading-[1.02] tracking-[-0.035em] text-foreground sm:text-[88px]">
-                The <span className="italic font-[400] text-muted-foreground">Corpus.</span>
+                The <span className="emph text-muted-foreground">Corpus.</span>
               </h1>
             </div>
             <Link
