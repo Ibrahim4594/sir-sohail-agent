@@ -16,13 +16,13 @@ export default async function ChatLayout({ children }: { children: React.ReactNo
     .single();
 
   return (
-    <div className="grid h-screen grid-cols-[288px_1fr]">
+    <div className="flex h-screen w-full">
       <Sidebar
         email={user.email ?? 'user'}
         displayName={profile?.display_name ?? user.email ?? 'user'}
         role={profile?.role ?? 'student'}
       />
-      <main className="relative min-w-0 overflow-hidden bg-background">{children}</main>
+      <main className="relative flex-1 min-w-0 overflow-hidden bg-background">{children}</main>
     </div>
   );
 }
