@@ -48,6 +48,9 @@ yarn-error.log*
 # Local dev tooling binaries (e.g., Supabase CLI fetched from GitHub)
 .tools/
 
+# Installed design skills (from `skills add <repo>`) — regenerate on demand
+.agents/
+
 # OS
 .DS_Store
 Thumbs.db
