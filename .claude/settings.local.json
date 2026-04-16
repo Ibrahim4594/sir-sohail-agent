@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:ollama.com)",
+      "Bash(git *)",
+      "Bash(npm install *)",
+      "Bash(pnpm *)",
+      "Bash(node -e \"const s = require\\('./node_modules/@biomejs/biome/package.json'\\); console.log\\(s.version\\)\")",
+      "Bash(curl -s \"https://biomejs.dev/schemas/2.4.12/schema.json\")",
+      "Bash(python -c \"import sys,json; s=json.load\\(sys.stdin\\); props=s.get\\('properties',{}\\).get\\('files',{}\\).get\\('properties',{}\\); print\\(list\\(props.keys\\(\\)\\)\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(echo \"Exit: $?\")"
+    ]
+  }
+}
