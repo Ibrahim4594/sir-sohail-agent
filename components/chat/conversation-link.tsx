@@ -31,25 +31,31 @@ export function ConversationLink({
   const active = params?.conversationId === id;
 
   return (
-    <li className="border-b border-rule last:border-b-0">
+    <li>
       <Link
         href={`/chat/${id}`}
         className={cn(
-          'group relative flex items-baseline justify-between gap-3 px-2 py-2.5 text-[13px] transition',
+          'group relative flex items-baseline justify-between gap-3 px-2 py-2 text-[13px] transition-colors duration-150',
           'hover:bg-muted',
           active && 'bg-muted',
         )}
       >
-        {active && <span aria-hidden className="absolute inset-y-0 left-0 w-0.5 bg-foreground" />}
+        {active && <span aria-hidden className="absolute inset-y-1 left-0 w-[2px] bg-foreground" />}
         <span
           className={cn(
-            'min-w-0 flex-1 truncate',
-            active ? 'font-medium text-foreground' : 'text-foreground/90',
+            'min-w-0 flex-1 truncate leading-[1.35]',
+            active ? 'font-[500] text-foreground' : 'text-foreground/90',
           )}
+          title={title}
         >
           {title}
         </span>
-        <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+        <span
+          className={cn(
+            'shrink-0 font-mono text-[10px] tabular-nums tracking-[0.04em] transition-colors duration-150',
+            active ? 'text-foreground' : 'text-muted-foreground/80 group-hover:text-foreground/80',
+          )}
+        >
           {formatRelative(updatedAt)}
         </span>
       </Link>
