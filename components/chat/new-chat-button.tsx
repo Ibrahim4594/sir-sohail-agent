@@ -10,20 +10,17 @@ export function NewChatButton() {
     <Link
       href="/chat"
       className={cn(
-        'group relative flex items-center justify-between gap-3 rounded-md border border-foreground/15 bg-card px-3.5 py-2.5 text-sm transition',
-        'hover:border-[var(--oxblood)] hover:bg-[var(--oxblood)]/[0.05]',
-        active && 'border-[var(--oxblood)] bg-[var(--oxblood)]/[0.05]',
+        'group flex w-full items-center justify-between gap-3 border border-foreground bg-foreground px-3.5 py-2.5 text-[13px] font-medium text-background transition',
+        'hover:bg-background hover:text-foreground',
+        active && 'bg-background text-foreground',
       )}
     >
-      <span className="font-display italic tracking-tight">A new conversation</span>
+      <span>A new conversation</span>
       <span
         aria-hidden
-        className={cn(
-          'font-mono text-xs text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-[var(--oxblood)]',
-          active && 'text-[var(--oxblood)]',
-        )}
+        className="font-mono text-[13px] leading-none transition group-hover:translate-x-0.5"
       >
-        ⟶
+        →
       </span>
     </Link>
   );

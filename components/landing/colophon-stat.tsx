@@ -1,28 +1,20 @@
 import { NumberTicker } from '@/components/ui/number-ticker';
 
 /**
- * A small editorial number block — used in the right rail of the landing.
- * Renders a ticker that counts up from zero to the given value on first paint.
+ * A big display number — the only "statistic" on the landing page.
+ * Pure type; no box, no icon.
  */
 export function ColophonStat({ value, label }: { value: number; label: string }) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-baseline gap-2">
+    <div>
+      <p className="label mb-4">The corpus</p>
+      <div className="flex items-baseline gap-3">
         <NumberTicker
           value={value}
-          className="font-display text-7xl italic leading-none tracking-tight text-foreground"
+          className="font-display text-[104px] leading-[0.82] font-[300] tracking-[-0.04em] text-foreground tabular"
         />
-        <span
-          aria-hidden
-          className="font-display text-3xl italic leading-none text-[var(--oxblood)]"
-        >
-          /
-        </span>
-        <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-          live
-        </span>
       </div>
-      <p className="label max-w-[20ch]">{label}</p>
+      <p className="mt-3 max-w-[22ch] text-sm leading-[1.45] text-muted-foreground">{label}</p>
     </div>
   );
 }

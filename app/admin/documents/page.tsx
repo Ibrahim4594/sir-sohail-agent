@@ -3,7 +3,7 @@ import { AdminUploader } from '@/components/admin/admin-uploader';
 import { DocumentRow } from '@/components/admin/document-row';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export const metadata = { title: 'Documents · Admin' };
+export const metadata = { title: 'Documents — Admin' };
 
 export default async function AdminDocumentsPage() {
   const supabase = await createServerSupabase();
@@ -20,51 +20,56 @@ export default async function AdminDocumentsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-12">
-      <header className="mb-12 flex items-start justify-between gap-6 border-b border-foreground/15 pb-8">
-        <div>
-          <p className="label mb-3">Administration</p>
-          <h1 className="font-display text-6xl italic leading-none tracking-[-0.02em]">
-            The Library.
-          </h1>
-          <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground">
-            Upload, parse, chunk, embed, and store a PDF in the corpus. A single document typically
-            takes thirty seconds to a few minutes depending on page count and the configured
-            embedding model.
-          </p>
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="border-b border-rule">
+        <div className="mx-auto max-w-5xl px-8 py-14">
+          <div className="flex items-start justify-between gap-6">
+            <div>
+              <p className="label mb-4">Administration</p>
+              <h1 className="font-display text-[80px] leading-[0.88] tracking-[-0.03em]">
+                <span className="block">The</span>
+                <span className="block italic font-[350]">Library.</span>
+              </h1>
+              <p className="mt-5 max-w-xl text-[14px] leading-[1.6] text-muted-foreground">
+                Upload, parse, chunk, embed, and store a PDF in the corpus. A single document
+                typically takes thirty seconds to a few minutes depending on page count and the
+                configured embedding model.
+              </p>
+            </div>
+            <Link
+              href="/chat"
+              className="label link shrink-0 pt-2 transition hover:text-foreground"
+            >
+              ← Back to chat
+            </Link>
+          </div>
         </div>
-        <Link
-          href="/chat"
-          className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-[var(--oxblood)]"
-        >
-          ← Back to chat
-        </Link>
       </header>
 
-      <section className="mb-10 grid gap-4 sm:grid-cols-3">
-        <Stat label="Ready" value={counts.ready} variant="ready" />
-        <Stat label="Processing" value={counts.processing} variant="processing" />
-        <Stat label="Failed" value={counts.failed} variant="failed" />
+      <section className="mx-auto max-w-5xl px-8 pt-10">
+        <div className="grid divide-x divide-rule border-y border-rule sm:grid-cols-3">
+          <Stat label="Ready" value={counts.ready} />
+          <Stat label="Processing" value={counts.processing} />
+          <Stat label="Failed" value={counts.failed} />
+        </div>
       </section>
 
-      <section className="mb-12">
-        <p className="label mb-3">Add a document</p>
+      <section className="mx-auto max-w-5xl px-8 pt-14">
+        <p className="label mb-4">Add a document</p>
         <AdminUploader />
       </section>
 
-      <section>
-        <div className="mb-3 flex items-baseline justify-between">
-          <p className="label">Corpus · {list.length} documents</p>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            Most recent first
-          </p>
+      <section className="mx-auto max-w-5xl px-8 pt-14 pb-20">
+        <div className="mb-4 flex items-baseline justify-between">
+          <p className="label">Corpus — {list.length} documents</p>
+          <p className="label">Most recent first</p>
         </div>
         {list.length === 0 ? (
-          <p className="rounded border border-dashed border-foreground/15 px-6 py-10 text-center text-sm italic text-muted-foreground">
+          <p className="border border-dashed border-rule px-6 py-14 text-center text-sm italic text-muted-foreground">
             The corpus is empty. Upload your first paper above.
           </p>
         ) : (
-          <ul className="divide-y divide-foreground/10 border-y border-foreground/15">
+          <ul className="divide-y divide-rule border-y border-rule">
             {list.map((d) => (
               <DocumentRow
                 key={d.id}
@@ -84,27 +89,11 @@ export default async function AdminDocumentsPage() {
   );
 }
 
-function Stat({
-  label,
-  value,
-  variant,
-}: {
-  label: string;
-  value: number;
-  variant: 'ready' | 'processing' | 'failed';
-}) {
-  const colors = {
-    ready: 'var(--brass)',
-    processing: 'var(--muted-foreground)',
-    failed: 'var(--oxblood)',
-  } as const;
+function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-md border border-foreground/12 bg-card/60 p-5">
+    <div className="px-6 py-6">
       <p className="label">{label}</p>
-      <p
-        className="mt-2 font-display text-5xl italic leading-none tabular-nums"
-        style={{ color: colors[variant] }}
-      >
+      <p className="mt-2 font-display text-[56px] leading-[0.9] font-[300] tabular tracking-[-0.03em] text-foreground">
         {value}
       </p>
     </div>

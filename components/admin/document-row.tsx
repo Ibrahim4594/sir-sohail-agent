@@ -14,18 +14,25 @@ function format(iso: string | null | undefined): string {
 }
 
 function StatusPill({ status }: { status: 'ready' | 'processing' | 'failed' }) {
-  const style = {
-    ready: { bg: 'var(--brass)', fg: 'var(--ink)' },
-    processing: { bg: 'var(--muted-foreground)', fg: 'var(--parchment)' },
-    failed: { bg: 'var(--oxblood)', fg: 'var(--parchment)' },
+  const variant = {
+    ready: 'bg-foreground text-background border-foreground',
+    processing: 'bg-background text-foreground border-foreground',
+    failed: 'bg-background text-destructive border-destructive',
   } as const;
-  const s = style[status];
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-sm px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em]"
-      style={{ backgroundColor: s.bg, color: s.fg }}
+      className={cn(
+        'inline-flex items-center gap-1.5 border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.22em]',
+        variant[status],
+      )}
     >
-      <span className="h-1 w-1 rounded-full bg-current" />
+      <span
+        aria-hidden
+        className={cn(
+          'h-[5px] w-[5px]',
+          status === 'processing' ? 'animate-pulse bg-foreground' : 'bg-current',
+        )}
+      />
       {status}
     </span>
   );
@@ -48,24 +55,22 @@ export function DocumentRow({
   errorMessage?: string | null;
 }) {
   return (
-    <li
-      className={cn(
-        'grid grid-cols-[1fr_auto_auto_auto] items-baseline gap-6 py-4 transition hover:bg-foreground/[0.02]',
-      )}
-    >
+    <li className="grid grid-cols-[1fr_auto_auto_auto] items-baseline gap-8 py-5 transition hover:bg-muted">
       <div className="min-w-0">
-        <p className="truncate font-display text-[17px] italic leading-tight tracking-[-0.005em]">
+        <p className="truncate font-display text-[18px] leading-[1.25] tracking-[-0.006em] text-foreground">
           {title}
         </p>
-        <p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{filename}</p>
+        <p className="mt-1 truncate font-mono text-[10px] tracking-[0.04em] text-muted-foreground">
+          {filename}
+        </p>
         {errorMessage && (
           <p className="mt-1 truncate text-xs text-destructive">Error: {errorMessage}</p>
         )}
       </div>
-      <div className="font-mono text-xs tabular-nums text-muted-foreground">
+      <div className="font-mono text-[11px] tabular-nums text-muted-foreground">
         {pageCount ?? '—'} pp.
       </div>
-      <div className="font-mono text-xs tabular-nums text-muted-foreground">
+      <div className="font-mono text-[11px] tabular-nums text-muted-foreground">
         {format(uploadedAt)}
       </div>
       <StatusPill status={status} />

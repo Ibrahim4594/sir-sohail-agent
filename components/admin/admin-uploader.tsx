@@ -83,34 +83,37 @@ export function AdminUploader() {
         if (f) onFile(f);
       }}
       className={cn(
-        'relative rounded-lg border-2 border-dashed bg-card/50 px-6 py-8 transition',
-        isDragOver ? 'border-[var(--oxblood)] bg-[var(--oxblood)]/[0.05]' : 'border-foreground/20',
+        'relative border-2 border-dashed bg-background px-6 py-10 transition',
+        isDragOver ? 'border-foreground bg-muted' : 'border-rule',
       )}
     >
       {/* biome-ignore-end lint/a11y/useAriaPropsSupportedByRole: end region */}
       {/* biome-ignore-end lint/a11y/noStaticElementInteractions: end region */}
-      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex-1">
+      <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex-1 min-w-0">
           {file ? (
             <div>
-              <p className="font-display text-lg italic tracking-tight">{file.name}</p>
-              <p className="label mt-1">
+              <p className="font-display text-[22px] leading-[1.2] tracking-[-0.01em] text-foreground">
+                {file.name}
+              </p>
+              <p className="label mt-2">
                 {(file.size / 1024 / 1024).toFixed(2)} MB · Ready to ingest
               </p>
             </div>
           ) : (
             <div>
-              <p className="font-display text-lg italic tracking-tight">
-                Drop a PDF <span className="text-muted-foreground not-italic">·</span>{' '}
+              <p className="font-display text-[22px] leading-[1.2] tracking-[-0.01em] text-foreground">
+                Drop a PDF, or{' '}
                 <button
                   type="button"
                   onClick={onPick}
-                  className="underline decoration-[var(--oxblood)] decoration-1 underline-offset-4 hover:text-[var(--oxblood)]"
+                  className="italic font-[400] underline decoration-foreground decoration-1 underline-offset-4 hover:no-underline"
                 >
-                  or pick a file
+                  pick a file
                 </button>
+                .
               </p>
-              <p className="label mt-1">Academic papers only · up to ~15 MB each</p>
+              <p className="label mt-2">Academic papers only · up to ~15 MB each</p>
             </div>
           )}
         </div>
@@ -120,7 +123,7 @@ export function AdminUploader() {
             <button
               type="button"
               onClick={() => setFile(null)}
-              className="rounded-md border border-foreground/15 px-3 py-1.5 text-xs transition hover:border-foreground/40"
+              className="border border-rule px-3 py-2 font-mono text-[10px] uppercase tracking-[0.22em] transition hover:border-foreground"
             >
               Cancel
             </button>
@@ -130,13 +133,14 @@ export function AdminUploader() {
             onClick={file ? submit : onPick}
             disabled={busy}
             className={cn(
-              'rounded-md border border-[var(--oxblood)]/50 bg-[var(--oxblood)] px-4 py-2 text-sm font-medium text-[var(--parchment)] transition',
-              'hover:bg-[var(--oxblood)]/90 disabled:opacity-70',
+              'border border-foreground bg-foreground px-5 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-background transition',
+              'hover:bg-background hover:text-foreground',
+              'disabled:pointer-events-none disabled:border-rule disabled:bg-background disabled:text-muted-foreground',
             )}
           >
-            {phase === 'uploading' && 'Uploading…'}
-            {phase === 'processing' && 'Parsing & embedding…'}
-            {phase === 'done' && 'Done ✓'}
+            {phase === 'uploading' && 'Uploading'}
+            {phase === 'processing' && 'Parsing & embedding'}
+            {phase === 'done' && 'Done'}
             {phase === 'error' && 'Retry'}
             {phase === 'idle' && (file ? 'Upload & ingest' : 'Select a file')}
           </button>
@@ -152,20 +156,20 @@ export function AdminUploader() {
       />
 
       {busy && (
-        <div className="mt-5">
-          <Progress value={progress} className="h-1" />
+        <div className="mt-6">
+          <Progress value={progress} className="h-[2px]" />
           <p className="label mt-2">
             {phase === 'uploading' ? 'Transferring bytes' : 'Chunking & embedding passages'}
           </p>
         </div>
       )}
       {phase === 'error' && message && (
-        <p className="mt-4 rounded border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+        <p className="mt-5 border border-destructive/40 bg-destructive/[0.03] px-3 py-2 text-xs text-destructive">
           {message}
         </p>
       )}
       {phase === 'done' && message && (
-        <p className="mt-4 rounded border border-foreground/15 bg-card px-3 py-2 text-xs text-[var(--oxblood)]">
+        <p className="mt-5 border border-foreground bg-muted px-3 py-2 text-xs text-foreground">
           {message}
         </p>
       )}

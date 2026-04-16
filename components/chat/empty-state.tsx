@@ -11,44 +11,43 @@ const SUGGESTIONS = [
 
 export function EmptyState({ onPick }: { onPick: (text: string) => void }) {
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-20 sm:px-8">
+    <div className="mx-auto w-full max-w-3xl px-6 py-24 sm:px-8">
       <div className="flex items-center gap-3">
-        <span aria-hidden className="h-px w-10 bg-foreground/40" />
-        <span className="label">Begin a conversation</span>
+        <span aria-hidden className="h-px w-10 bg-foreground" />
+        <span className="label label--ink">Begin a conversation</span>
       </div>
 
-      <h2 className="mt-6 font-display text-[64px] leading-[0.92] italic tracking-[-0.02em] text-foreground sm:text-[84px]">
-        Ask the
-        <br />
-        corpus<span className="text-[var(--oxblood)]">.</span>
+      <h2 className="mt-6 font-display text-[72px] leading-[0.9] tracking-[-0.035em] text-foreground sm:text-[104px]">
+        <span className="block">Ask the</span>
+        <span className="block italic font-[350]">corpus.</span>
       </h2>
 
-      <p className="mt-6 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
+      <p className="mt-6 max-w-xl text-[16px] leading-[1.6] text-muted-foreground">
         The assistant reads from a closed library of academic papers. It will quote, summarize, or
         decline — never invent. Every claim is footnoted with the exact source page.
       </p>
 
-      <div className="mt-10">
-        <p className="label mb-3">A few ways to start</p>
-        <ul className="space-y-2">
+      <div className="mt-14">
+        <p className="label mb-4">A few ways to start</p>
+        <ul className="divide-y divide-rule border-y border-rule">
           {SUGGESTIONS.map((s) => (
             <li key={s}>
               <button
                 type="button"
                 onClick={() => onPick(s)}
                 className={cn(
-                  'group flex w-full items-center justify-between gap-6 rounded-md border border-foreground/10 bg-card/70 px-4 py-3 text-left transition',
-                  'hover:border-[var(--oxblood)]/50 hover:bg-[var(--oxblood)]/[0.04]',
+                  'group flex w-full items-baseline justify-between gap-6 px-1 py-4 text-left transition',
+                  'hover:bg-muted',
                 )}
               >
-                <span className="font-display text-[17px] italic leading-snug tracking-[-0.005em] text-foreground/95">
+                <span className="font-display text-[19px] leading-[1.35] tracking-[-0.008em] text-foreground">
                   {s}
                 </span>
                 <span
                   aria-hidden
-                  className="shrink-0 font-mono text-xs text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-[var(--oxblood)]"
+                  className="shrink-0 font-mono text-sm text-muted-foreground transition group-hover:translate-x-1 group-hover:text-foreground"
                 >
-                  ⟶
+                  →
                 </span>
               </button>
             </li>

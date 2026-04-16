@@ -18,52 +18,48 @@ export function SourcesPanel({
   const visible = expanded ? valid : valid.slice(0, 2);
 
   return (
-    <section className="mt-5 border-t border-foreground/10 pt-4">
-      <div className="mb-3 flex items-center justify-between">
-        <p className="label text-[var(--oxblood)]">
-          Sources · {valid.length} citation{valid.length === 1 ? '' : 's'}
+    <section className="mt-7 border-t border-rule pt-5">
+      <div className="mb-3 flex items-baseline justify-between">
+        <p className="label label--ink">
+          Footnotes — {valid.length} citation{valid.length === 1 ? '' : 's'}
         </p>
         {valid.length > 2 && (
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground transition hover:text-foreground"
+            className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground transition hover:text-foreground"
           >
-            {expanded ? `Collapse` : `Show all (${valid.length})`}
+            {expanded ? 'Collapse' : `Show all (${valid.length})`}
           </button>
         )}
       </div>
-      <ul className="space-y-2">
+      <ul className="divide-y divide-rule border-y border-rule">
         {visible.map((c) => (
           <li key={`${c.marker}-${c.chunkId}`}>
             <button
               type="button"
               onClick={() => onOpen(c)}
               className={cn(
-                'group block w-full rounded-md border border-foreground/10 bg-card/60 px-3 py-2.5 text-left transition',
-                'hover:border-[var(--oxblood)]/60 hover:bg-[var(--oxblood)]/[0.03]',
+                'group grid w-full grid-cols-[40px_1fr_auto] items-baseline gap-4 px-1 py-3 text-left transition',
+                'hover:bg-muted',
               )}
             >
-              <div className="flex items-baseline gap-3">
-                <span className="shrink-0 font-mono text-[11px] tabular-nums text-[var(--oxblood)]">
-                  [{c.marker}]
+              <span className="font-mono text-[11px] tabular-nums text-foreground">
+                [{String(c.marker).padStart(2, '0')}]
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate font-display text-[15px] leading-snug text-foreground">
+                  {c.documentTitle ?? c.documentFilename}
                 </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="truncate font-display text-sm italic leading-snug text-foreground">
-                      {c.documentTitle ?? c.documentFilename}
-                    </p>
-                    <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
-                      p. {c.pageNumber}
-                    </span>
-                  </div>
-                  {c.snippet && (
-                    <p className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground group-hover:text-foreground/85">
-                      {c.snippet}
-                    </p>
-                  )}
-                </div>
-              </div>
+                {c.snippet && (
+                  <span className="mt-1 block line-clamp-2 text-[12px] leading-[1.5] text-muted-foreground">
+                    {c.snippet}
+                  </span>
+                )}
+              </span>
+              <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+                p. {c.pageNumber}
+              </span>
             </button>
           </li>
         ))}

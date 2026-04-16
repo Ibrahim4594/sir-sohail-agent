@@ -100,56 +100,48 @@ export function PaperCard({
   filename,
   pageCount,
   summary,
-  highlight,
 }: {
   index: number;
   title: string;
   filename: string;
   pageCount: number | null;
   summary: string | null;
-  highlight?: boolean;
 }) {
   const tags = deriveTags(filename, title);
 
   return (
     <article
       className={cn(
-        'group relative flex h-full flex-col overflow-hidden rounded-lg border border-foreground/10 bg-card px-5 py-5 transition',
-        'hover:border-[var(--oxblood)]/60 hover:shadow-[0_12px_32px_-20px_rgba(26,31,44,0.35)]',
-        highlight && 'border-[var(--oxblood)]/30 bg-[var(--oxblood)]/[0.02]',
+        'group relative flex h-full min-h-[220px] flex-col justify-between border-b border-r border-rule bg-background px-6 py-6 transition',
+        'hover:bg-muted',
       )}
     >
-      {/* Marginal reference number (Roman-ish) */}
-      <header className="mb-3 flex items-baseline justify-between">
-        <span className="font-mono text-[11px] uppercase tracking-widest text-[var(--oxblood)]">
-          Entry &nbsp;№&nbsp;{String(index).padStart(3, '0')}
+      <header className="mb-4 flex items-baseline justify-between">
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+          № {String(index).padStart(3, '0')}
         </span>
         <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
           {pageCount ?? '—'} pp.
         </span>
       </header>
 
-      <h3 className="font-display text-[20px] italic leading-[1.2] tracking-[-0.008em] text-foreground">
+      <h3 className="font-display text-[19px] leading-[1.2] tracking-[-0.008em] text-foreground">
         {title}
       </h3>
 
       {summary ? (
-        <p className="mt-3 line-clamp-3 text-[13px] leading-relaxed text-muted-foreground">
+        <p className="mt-3 line-clamp-3 text-[13px] leading-[1.55] text-muted-foreground">
           {summary}
         </p>
-      ) : (
-        <p className="mt-3 line-clamp-2 font-mono text-[11px] leading-relaxed text-muted-foreground/80">
-          {filename}
-        </p>
-      )}
+      ) : null}
 
       {tags.length > 0 && (
-        <div className="mt-auto pt-4">
-          <ul className="flex flex-wrap gap-1.5">
+        <div className="mt-auto pt-5">
+          <ul className="flex flex-wrap gap-x-3 gap-y-1">
             {tags.map((t) => (
               <li
                 key={t}
-                className="rounded-full border border-foreground/15 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-muted-foreground transition group-hover:border-[var(--oxblood)]/40 group-hover:text-[var(--oxblood)]"
+                className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground transition group-hover:text-foreground"
               >
                 {t}
               </li>
@@ -157,14 +149,6 @@ export function PaperCard({
           </ul>
         </div>
       )}
-
-      {/* Decorative corner flourish */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -right-2 -top-4 font-display text-8xl italic leading-none text-foreground/[0.04] transition group-hover:text-[var(--oxblood)]/10"
-      >
-        ¶
-      </span>
     </article>
   );
 }

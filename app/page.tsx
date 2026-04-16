@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { GoogleButton } from '@/components/auth/google-button';
 import { ColophonStat } from '@/components/landing/colophon-stat';
-import { HeroStage } from '@/components/landing/hero-stage';
 import { createServerSupabase } from '@/lib/supabase/server';
 
 export default async function Home() {
@@ -11,7 +10,6 @@ export default async function Home() {
   } = await supabase.auth.getUser();
   if (user) redirect('/chat');
 
-  // Get live corpus stats (graceful fallback).
   let paperCount = 40;
   try {
     const { count } = await supabase.from('documents').select('*', { count: 'exact', head: true });
@@ -21,102 +19,95 @@ export default async function Home() {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col overflow-hidden">
-      <HeroStage />
-
-      {/* Masthead — top strip. */}
-      <header className="relative z-10 flex items-center justify-between px-6 pt-6 sm:px-10 lg:px-16">
-        <div className="label flex items-center gap-3">
-          <span aria-hidden className="h-px w-6 bg-foreground/60" />
-          <span>Volume I · Issue 01 · April 2026</span>
-        </div>
+    <main className="relative flex min-h-screen flex-col bg-background text-foreground">
+      <header
+        className="flex items-center justify-between border-b border-rule px-6 py-5 sm:px-10 lg:px-14"
+        style={{ animation: 'fade 700ms 40ms both' }}
+      >
+        <div className="label">Est. 2026 · Volume I</div>
         <div className="label hidden sm:block">Eastern Michigan University</div>
       </header>
 
-      {/* Hero — asymmetric editorial headline. */}
-      <section className="relative z-10 grid flex-1 grid-cols-12 gap-x-6 px-6 pt-16 sm:px-10 lg:px-16">
-        <div className="col-span-12 lg:col-span-8 lg:pr-16">
-          <p
-            className="label mb-5"
-            style={{ animation: 'rise 700ms 120ms both cubic-bezier(0.16,1,0.3,1)' }}
-          >
-            A grounded research agent
-          </p>
-
-          <h1
-            className="font-display text-[14vw] leading-[0.86] tracking-[-0.025em] text-foreground sm:text-[10vw] lg:text-[108px]"
-            style={{ animation: 'rise 900ms 200ms both cubic-bezier(0.16,1,0.3,1)' }}
-          >
-            <span className="block italic">
-              Sir&nbsp;Sohail<span className="text-[var(--oxblood)]">’s</span>
-            </span>
-            <span className="block -mt-1">Research Assistant.</span>
-          </h1>
-
-          <div
-            className="mt-10 max-w-xl"
-            style={{ animation: 'rise 900ms 380ms both cubic-bezier(0.16,1,0.3,1)' }}
-          >
-            <p className="drop-cap font-serif text-[1.15rem] leading-[1.55] text-foreground/85">
-              An agent bound to a closed corpus of{' '}
-              <span className="font-sans tabular-nums">{paperCount}</span> peer-reviewed papers on
-              innovation education, entrepreneurship pedagogy, and project-based learning. Every
-              answer it produces is footnoted with the exact paper and page; no claim is permitted
-              to escape the library.
+      <section className="flex-1 px-6 sm:px-10 lg:px-14">
+        <div className="grid grid-cols-12 gap-x-10 pt-20 pb-16 lg:pt-32">
+          <div className="col-span-12 lg:col-span-8">
+            <p className="label mb-8" style={{ animation: 'rise 800ms 120ms both' }}>
+              A grounded research agent
             </p>
-          </div>
 
-          <div
-            className="mt-10 flex flex-col items-start gap-3 sm:flex-row sm:items-center"
-            style={{ animation: 'rise 900ms 560ms both cubic-bezier(0.16,1,0.3,1)' }}
-          >
-            <div className="w-full max-w-xs">
-              <GoogleButton />
+            <h1
+              className="font-display text-[clamp(3.5rem,10vw,10rem)] leading-[0.88] tracking-[-0.035em] text-foreground"
+              style={{ animation: 'rise 900ms 220ms both' }}
+            >
+              <span className="block">
+                Sir Sohail<span className="italic">&rsquo;s</span>
+              </span>
+              <span className="block italic font-[350]">Research&nbsp;</span>
+              <span className="-mt-[0.08em] block">
+                Assistant<span className="italic">.</span>
+              </span>
+            </h1>
+
+            <div
+              className="mt-14 grid gap-x-10 gap-y-8 md:grid-cols-[1fr_auto]"
+              style={{ animation: 'rise 900ms 420ms both' }}
+            >
+              <p className="drop-cap max-w-[55ch] font-sans text-[17px] leading-[1.55] text-foreground/85">
+                An agent bound to a closed library of{' '}
+                <span className="tabular font-medium">{paperCount}</span> peer-reviewed papers on
+                innovation education, entrepreneurship pedagogy, and project-based learning. Every
+                answer it produces is footnoted with the exact paper and page; no claim is ever
+                permitted to escape the library.
+              </p>
+
+              <div className="flex flex-col items-start gap-3 md:min-w-[240px]">
+                <GoogleButton className="max-w-xs" />
+                <p className="label">Sign in to begin</p>
+              </div>
             </div>
-            <p className="label pl-1">Sign in · EMU accounts welcome</p>
           </div>
+
+          <aside
+            className="col-span-12 mt-16 flex flex-col gap-10 lg:col-span-4 lg:mt-0 lg:border-l lg:border-rule lg:pl-10"
+            style={{ animation: 'rise 900ms 620ms both' }}
+          >
+            <ColophonStat value={paperCount} label="Source papers / vector-indexed" />
+
+            <figure>
+              <div aria-hidden className="mb-4 h-px w-10 bg-foreground" />
+              <blockquote className="font-display text-[22px] italic font-[350] leading-[1.28] tracking-[-0.008em] text-foreground">
+                If the passage is not in the library, the assistant may not invent it.
+              </blockquote>
+              <figcaption className="label mt-4">House rule — No. 1</figcaption>
+            </figure>
+
+            <dl className="divide-y divide-rule border-y border-rule">
+              <SpecRow term="Retrieval" value="pgvector · top-K 8" />
+              <SpecRow term="Generation" value="Gemma 4 E4B · local" />
+              <SpecRow term="Safeguards" value="3-layer grounding" />
+              <SpecRow term="Provenance" value="Every claim cited" />
+            </dl>
+          </aside>
         </div>
-
-        {/* Right margin column — colophon / pull quote / stats. */}
-        <aside
-          className="col-span-12 mt-16 flex flex-col lg:col-span-4 lg:mt-0 lg:pl-10 lg:border-l lg:border-foreground/15"
-          style={{ animation: 'rise 900ms 720ms both cubic-bezier(0.16,1,0.3,1)' }}
-        >
-          <ColophonStat value={paperCount} label="Source papers · vector-indexed" />
-
-          <figure className="mt-10 border-l-2 border-[var(--oxblood)] pl-4">
-            <blockquote className="font-display italic text-xl leading-snug text-foreground/90">
-              “If the passage is not in the library, the assistant may not invent it.”
-            </blockquote>
-            <figcaption className="label mt-3">House rule · §&nbsp;1</figcaption>
-          </figure>
-
-          <ul className="mt-10 space-y-3 text-sm">
-            <li className="flex items-baseline justify-between gap-4 rule-x pb-2">
-              <span className="label">Retrieval</span>
-              <span className="font-mono text-xs tabular-nums">pgvector · top-K 8</span>
-            </li>
-            <li className="flex items-baseline justify-between gap-4 rule-x pb-2">
-              <span className="label">Generation</span>
-              <span className="font-mono text-xs tabular-nums">Gemma 4 E4B · local</span>
-            </li>
-            <li className="flex items-baseline justify-between gap-4 rule-x pb-2">
-              <span className="label">Safeguards</span>
-              <span className="font-mono text-xs tabular-nums">3-layer grounding</span>
-            </li>
-          </ul>
-        </aside>
       </section>
 
-      {/* Footer — colophon band. */}
-      <footer className="relative z-10 mt-20 border-t border-foreground/15 px-6 py-5 sm:px-10 lg:px-16">
+      <footer className="border-t border-rule px-6 py-5 sm:px-10 lg:px-14">
         <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-          <p className="label">
-            Prof. Sohail &nbsp;·&nbsp; College of Business &nbsp;·&nbsp; Eastern Michigan University
-          </p>
+          <p className="label">Prof. Sohail · College of Business · Eastern Michigan University</p>
           <p className="label">Grounded &amp; cited. Never guessed.</p>
         </div>
       </footer>
     </main>
+  );
+}
+
+function SpecRow({ term, value }: { term: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[auto_1fr] items-baseline gap-6 py-3">
+      <dt className="label">{term}</dt>
+      <dd className="text-right font-mono text-[11px] tracking-[0.04em] text-foreground tabular">
+        {value}
+      </dd>
+    </div>
   );
 }

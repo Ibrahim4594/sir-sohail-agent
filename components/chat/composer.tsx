@@ -37,17 +37,14 @@ export function Composer({
         submit();
       }}
       className={cn(
-        'group mx-auto w-full max-w-3xl rounded-xl border border-foreground/15 bg-card/95 shadow-[0_8px_32px_-16px_rgba(26,31,44,0.25)] backdrop-blur-md transition',
-        'focus-within:border-[var(--oxblood)]/60 focus-within:shadow-[0_8px_32px_-12px_rgba(139,38,53,0.22)]',
+        'group mx-auto w-full max-w-3xl border border-foreground bg-background transition',
+        'focus-within:border-foreground',
         disabled && 'opacity-70',
       )}
     >
-      <div className="flex items-start gap-3 px-4 pt-3.5">
-        <span
-          aria-hidden
-          className="mt-1 font-display text-lg italic leading-none text-[var(--oxblood)]"
-        >
-          ¶
+      <div className="flex items-start gap-3 px-5 pt-4">
+        <span aria-hidden className="label pt-1.5 shrink-0">
+          Ask
         </span>
         <textarea
           ref={ref}
@@ -63,27 +60,27 @@ export function Composer({
           rows={1}
           disabled={disabled}
           className={cn(
-            'flex-1 resize-none bg-transparent pb-2 font-sans text-[15px] leading-[1.5] text-foreground',
-            'placeholder:text-muted-foreground/80 focus:outline-none',
+            'flex-1 resize-none bg-transparent pb-2 font-display text-[19px] leading-[1.4] tracking-[-0.005em] text-foreground',
+            'placeholder:text-muted-foreground focus:outline-none',
           )}
           style={{ minHeight: '22px', maxHeight: '220px' }}
         />
       </div>
 
-      <div className="flex items-center justify-between gap-3 px-4 pb-3">
-        <p className="label">Enter to send · Shift&nbsp;+&nbsp;Enter for newline</p>
+      <div className="flex items-center justify-between gap-3 border-t border-rule px-5 py-2.5">
+        <p className="label">Enter to send · Shift + Enter for newline</p>
         <button
           type="submit"
           disabled={disabled || !value.trim()}
           className={cn(
-            'group/send inline-flex items-center gap-2 rounded-md border border-[var(--oxblood)]/40 bg-[var(--oxblood)] px-3.5 py-1.5 text-[var(--parchment)] transition',
-            'hover:bg-[var(--oxblood)]/90 hover:shadow-[0_4px_16px_-6px_rgba(139,38,53,0.5)]',
-            'disabled:pointer-events-none disabled:bg-muted disabled:text-muted-foreground disabled:border-foreground/15',
+            'group/send inline-flex items-center gap-2.5 border border-foreground bg-foreground px-4 py-1.5 text-[12px] font-medium tracking-[0.04em] text-background transition',
+            'hover:bg-background hover:text-foreground',
+            'disabled:pointer-events-none disabled:border-rule disabled:bg-background disabled:text-muted-foreground',
           )}
         >
-          <span className="font-display text-sm italic leading-none">Send</span>
-          <span aria-hidden className="font-mono text-[13px] leading-none">
-            ⟶
+          <span className="font-mono uppercase tracking-[0.22em]">Send</span>
+          <span aria-hidden className="font-mono leading-none">
+            →
           </span>
         </button>
       </div>

@@ -7,7 +7,7 @@ function formatRelative(iso: string): string {
   const now = Date.now();
   const then = new Date(iso).getTime();
   const s = Math.max(0, Math.round((now - then) / 1000));
-  if (s < 60) return 'just now';
+  if (s < 60) return 'now';
   const m = Math.round(s / 60);
   if (m < 60) return `${m}m`;
   const h = Math.round(m / 60);
@@ -31,22 +31,24 @@ export function ConversationLink({
   const active = params?.conversationId === id;
 
   return (
-    <li>
+    <li className="border-b border-rule last:border-b-0">
       <Link
         href={`/chat/${id}`}
         className={cn(
-          'group relative flex items-center justify-between gap-2 overflow-hidden rounded px-3 py-2 text-sm transition',
-          'hover:bg-foreground/5',
-          active && 'bg-foreground/[0.08]',
+          'group relative flex items-baseline justify-between gap-3 px-2 py-2.5 text-[13px] transition',
+          'hover:bg-muted',
+          active && 'bg-muted',
         )}
       >
-        {active && (
-          <span
-            aria-hidden
-            className="absolute inset-y-1.5 left-0 w-0.5 rounded-r bg-[var(--oxblood)]"
-          />
-        )}
-        <span className="min-w-0 flex-1 truncate">{title}</span>
+        {active && <span aria-hidden className="absolute inset-y-0 left-0 w-0.5 bg-foreground" />}
+        <span
+          className={cn(
+            'min-w-0 flex-1 truncate',
+            active ? 'font-medium text-foreground' : 'text-foreground/90',
+          )}
+        >
+          {title}
+        </span>
         <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
           {formatRelative(updatedAt)}
         </span>
