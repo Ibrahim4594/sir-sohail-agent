@@ -1,3 +1,4 @@
+import { BookOpenText, PenSquare, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import {
   Sidebar as ShadSidebar,
@@ -5,7 +6,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuBadge,
@@ -49,10 +49,12 @@ export async function Sidebar({
   email,
   displayName,
   role,
+  avatarUrl,
 }: {
   email: string;
   displayName: string;
   role: string;
+  avatarUrl: string | null;
 }) {
   const supabase = await createServerSupabase();
   const { data } = await supabase
@@ -68,9 +70,9 @@ export async function Sidebar({
 
   return (
     <ShadSidebar collapsible="icon" variant="sidebar" className="border-r border-rule">
-      {/* Header — brand monogram + wordmark (wordmark hides when collapsed). */}
+      {/* Header — monogram + wordmark (wordmark hides when collapsed). */}
       <SidebarHeader className="border-b border-rule p-0">
-        <div className="flex h-[72px] items-center gap-3 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+        <div className="flex h-[68px] items-center gap-3 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
           <Link
             href="/"
             className="flex items-center gap-3"
@@ -78,15 +80,15 @@ export async function Sidebar({
           >
             <span
               aria-hidden
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-[4px] bg-foreground font-mono text-[11px] font-semibold leading-none tracking-[0.04em] text-background"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-[5px] bg-foreground text-[12px] font-[600] leading-none tracking-[0.04em] text-background"
             >
               {initials}
             </span>
             <span className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
-              <span className="flex items-baseline gap-1 whitespace-nowrap font-display text-[15px] font-[500] leading-[1.1] tracking-[-0.015em] text-foreground">
-                Sir Sohail<span className="italic font-[400]">&rsquo;s</span>
+              <span className="whitespace-nowrap font-display text-[14.5px] font-[600] leading-[1.1] tracking-[-0.015em] text-foreground">
+                Research Assistant
               </span>
-              <span className="label mt-1 whitespace-nowrap">Research Assistant</span>
+              <span className="label mt-[5px] whitespace-nowrap">Sir Sohail &middot; EMU</span>
             </span>
           </Link>
         </div>
@@ -100,25 +102,18 @@ export async function Sidebar({
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="New conversation" size="default">
                   <Link href="/chat">
-                    <span
-                      aria-hidden
-                      className="grid h-[18px] w-[18px] place-items-center font-mono text-[15px] leading-none"
-                    >
-                      +
-                    </span>
+                    <PenSquare strokeWidth={1.75} aria-hidden />
                     <span>New conversation</span>
                   </Link>
                 </SidebarMenuButton>
+                <SidebarMenuBadge className="pointer-events-none text-[10px] font-[500] text-muted-foreground group-data-[collapsible=icon]:hidden">
+                  <kbd className="font-sans">⌘B</kbd>
+                </SidebarMenuBadge>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Corpus overview" size="default">
                   <Link href="/overview">
-                    <span
-                      aria-hidden
-                      className="grid h-[18px] w-[18px] place-items-center font-mono text-[15px] leading-none"
-                    >
-                      ¶
-                    </span>
+                    <BookOpenText strokeWidth={1.75} aria-hidden />
                     <span>Corpus overview</span>
                   </Link>
                 </SidebarMenuButton>
@@ -127,16 +122,11 @@ export async function Sidebar({
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild tooltip="Admin — Documents" size="default">
                     <Link href="/admin/documents">
-                      <span
-                        aria-hidden
-                        className="grid h-[18px] w-[18px] place-items-center font-mono text-[15px] leading-none"
-                      >
-                        †
-                      </span>
+                      <ShieldCheck strokeWidth={1.75} aria-hidden />
                       <span>Admin</span>
                     </Link>
                   </SidebarMenuButton>
-                  <SidebarMenuBadge className="font-mono text-[9px] uppercase tracking-[0.22em]">
+                  <SidebarMenuBadge className="pointer-events-none text-[9px] font-[600] uppercase tracking-[0.18em] text-muted-foreground group-data-[collapsible=icon]:hidden">
                     Admin
                   </SidebarMenuBadge>
                 </SidebarMenuItem>
@@ -147,7 +137,7 @@ export async function Sidebar({
 
         <SidebarSeparator className="mx-0" />
 
-        {/* Conversation history — three time-bucketed groups. Hidden when the rail collapses. */}
+        {/* Conversation history — time-bucketed groups. Hidden when the rail collapses. */}
         <div className="group-data-[collapsible=icon]:hidden">
           {list.length === 0 ? (
             <SidebarGroup className="px-4 py-3">
@@ -170,16 +160,32 @@ export async function Sidebar({
 
       <SidebarFooter className="border-t border-rule p-2">
         <div className="group-data-[collapsible=icon]:hidden">
-          <AccountMenu email={email} displayName={displayName} initials={initials} role={role} />
+          <AccountMenu
+            email={email}
+            displayName={displayName}
+            initials={initials}
+            role={role}
+            avatarUrl={avatarUrl}
+          />
         </div>
         <div className="hidden group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-          <span
-            aria-hidden
-            className="grid h-8 w-8 place-items-center rounded-[4px] bg-foreground font-mono text-[11px] font-semibold leading-none tracking-[0.04em] text-background"
-            title={displayName || email}
-          >
-            {initials}
-          </span>
+          {avatarUrl ? (
+            // biome-ignore lint/performance/noImgElement: profile URLs come from external OAuth providers
+            <img
+              src={avatarUrl}
+              alt=""
+              className="h-8 w-8 rounded-[5px] object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <span
+              aria-hidden
+              className="grid h-8 w-8 place-items-center rounded-[5px] bg-foreground text-[12px] font-[600] leading-none tracking-[0.04em] text-background"
+              title={displayName || email}
+            >
+              {initials}
+            </span>
+          )}
         </div>
       </SidebarFooter>
 

@@ -23,12 +23,18 @@ export default async function ChatLayout({ children }: { children: React.ReactNo
   const saved = cookieStore.get('sidebar_state');
   const defaultOpen = saved ? saved.value === 'true' : true;
 
+  const avatarUrl =
+    (user.user_metadata as { avatar_url?: string; picture?: string } | null)?.avatar_url ??
+    (user.user_metadata as { picture?: string } | null)?.picture ??
+    null;
+
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <Sidebar
         email={user.email ?? 'user'}
         displayName={profile?.display_name ?? user.email ?? 'user'}
         role={profile?.role ?? 'student'}
+        avatarUrl={avatarUrl}
       />
       <SidebarInset className="relative min-w-0 overflow-hidden bg-background">
         {/* Tiny floating toggle, visible only on small screens where the
