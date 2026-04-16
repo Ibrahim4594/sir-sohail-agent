@@ -22,9 +22,8 @@ export default async function OverviewPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="label mb-4">Catalogue raisonné</p>
-              <h1 className="font-display text-[96px] leading-[0.88] tracking-[-0.035em] text-foreground sm:text-[128px]">
-                <span className="block">The</span>
-                <span className="block italic font-[350]">Corpus.</span>
+              <h1 className="font-display text-[72px] font-[600] leading-[1.02] tracking-[-0.035em] text-foreground sm:text-[88px]">
+                The <span className="italic font-[400] text-muted-foreground">Corpus.</span>
               </h1>
             </div>
             <Link
@@ -45,7 +44,7 @@ export default async function OverviewPage() {
 
       {list.length === 0 ? (
         <section className="mx-auto max-w-6xl px-8 py-24 text-center">
-          <p className="font-display text-[32px] italic font-[350] leading-[1.2] text-muted-foreground">
+          <p className="font-display text-[28px] italic font-[400] leading-[1.2] text-muted-foreground">
             The corpus has not been populated yet.
           </p>
           <p className="mt-4 text-sm text-muted-foreground">

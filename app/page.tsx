@@ -29,35 +29,30 @@ export default async function Home() {
       </header>
 
       <section className="flex-1 px-6 sm:px-10 lg:px-14">
-        <div className="grid grid-cols-12 gap-x-10 pt-20 pb-16 lg:pt-32">
+        <div className="grid grid-cols-12 gap-x-10 pt-20 pb-16 lg:pt-28">
           <div className="col-span-12 lg:col-span-8">
             <p className="label mb-8" style={{ animation: 'rise 800ms 120ms both' }}>
               A grounded research agent
             </p>
 
             <h1
-              className="font-display text-[clamp(3.5rem,10vw,10rem)] leading-[0.88] tracking-[-0.035em] text-foreground"
+              className="font-display text-[clamp(2.75rem,7.5vw,6.5rem)] font-[600] leading-[1.02] tracking-[-0.035em] text-foreground"
               style={{ animation: 'rise 900ms 220ms both' }}
             >
-              <span className="block">
-                Sir Sohail<span className="italic">&rsquo;s</span>
-              </span>
-              <span className="block italic font-[350]">Research&nbsp;</span>
-              <span className="-mt-[0.08em] block">
-                Assistant<span className="italic">.</span>
-              </span>
+              Sir Sohail<span className="italic font-[500]">&rsquo;s</span> research assistant,{' '}
+              <span className="italic font-[400] text-muted-foreground">grounded</span> in a closed
+              library.
             </h1>
 
             <div
-              className="mt-14 grid gap-x-10 gap-y-8 md:grid-cols-[1fr_auto]"
+              className="mt-12 grid gap-x-10 gap-y-8 md:grid-cols-[1fr_auto]"
               style={{ animation: 'rise 900ms 420ms both' }}
             >
-              <p className="drop-cap max-w-[55ch] font-sans text-[17px] leading-[1.55] text-foreground/85">
-                An agent bound to a closed library of{' '}
-                <span className="tabular font-medium">{paperCount}</span> peer-reviewed papers on
-                innovation education, entrepreneurship pedagogy, and project-based learning. Every
-                answer it produces is footnoted with the exact paper and page; no claim is ever
-                permitted to escape the library.
+              <p className="max-w-[55ch] text-[16px] leading-[1.6] text-foreground/85">
+                Ask the assistant anything about innovation education, entrepreneurship pedagogy, or
+                project-based learning — and it will answer only from our{' '}
+                <span className="tabular font-medium">{paperCount}</span> peer-reviewed papers.
+                Every claim is footnoted. No claim is ever permitted to escape the library.
               </p>
 
               <div className="flex flex-col items-start gap-3 md:min-w-[240px]">
@@ -75,7 +70,7 @@ export default async function Home() {
 
             <figure>
               <div aria-hidden className="mb-4 h-px w-10 bg-foreground" />
-              <blockquote className="font-display text-[22px] italic font-[350] leading-[1.28] tracking-[-0.008em] text-foreground">
+              <blockquote className="text-[18px] font-[400] leading-[1.4] tracking-[-0.005em] text-foreground">
                 If the passage is not in the library, the assistant may not invent it.
               </blockquote>
               <figcaption className="label mt-4">House rule — No. 1</figcaption>

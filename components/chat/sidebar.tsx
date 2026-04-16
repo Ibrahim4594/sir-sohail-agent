@@ -34,7 +34,7 @@ export async function Sidebar({
         <Link href="/" className="block group">
           <div className="font-display text-[22px] leading-[0.95] tracking-[-0.02em]">
             <span>Sir Sohail</span>
-            <span className="italic font-[350]">’s</span>
+            <span className="italic font-[500]">&rsquo;s</span>
           </div>
           <div className="label mt-2.5">The Research Assistant</div>
         </Link>

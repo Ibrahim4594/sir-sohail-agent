@@ -1,0 +1,40 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "core": {
+    "text-primary": {
+      "value": "#0d0d0d",
+      "role": "text-primary"
+    },
+    "text-muted": {
+      "value": "#8f8f8f",
+      "role": "text-muted"
+    },
+    "background": {
+      "value": "#ffffff",
+      "role": "background"
+    },
+    "border": {
+      "value": "#5d5d5d",
+      "role": "border"
+    },
+    "surface": {
+      "value": "#e8e8e8",
+      "role": "surface"
+    }
+  },
+  "status": {},
+  "extended": {
+    "color-000000": {
+      "value": "#000000",
+      "role": "unknown"
+    },
+    "color-9b9b9b": {
+      "value": "#9b9b9b",
+      "role": "unknown"
+    }
+  },
+  "meta": {
+    "theme": "light",
+    "extracted": "2026-04-16"
+  }
+}

@@ -15,9 +15,8 @@ export default function SignInPage() {
         <div className="w-full max-w-[460px]" style={{ animation: 'rise 800ms 120ms both' }}>
           <p className="label mb-5">Sign in</p>
 
-          <h1 className="font-display text-[72px] leading-[0.88] tracking-[-0.03em] text-foreground">
-            <span className="block">Welcome</span>
-            <span className="block italic font-[350]">back.</span>
+          <h1 className="font-display text-[52px] font-[600] leading-[1.02] tracking-[-0.035em] text-foreground">
+            Welcome <span className="italic font-[400] text-muted-foreground">back.</span>
           </h1>
 
           <p className="mt-6 max-w-sm text-[15px] leading-[1.55] text-muted-foreground">
