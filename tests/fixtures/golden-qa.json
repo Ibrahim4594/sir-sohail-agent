@@ -1,0 +1,27 @@
+[
+  {
+    "question": "What is project-based learning according to the corpus?",
+    "expectedTopicKeywords": ["project-based", "PBL", "learning"],
+    "minCitations": 1
+  },
+  {
+    "question": "Which papers discuss innovation in higher education?",
+    "expectedTopicKeywords": ["innovation", "higher education"],
+    "minCitations": 1
+  },
+  {
+    "question": "Summarize findings on entrepreneurship education for medical students.",
+    "expectedTopicKeywords": ["entrepreneurship", "medical"],
+    "minCitations": 1
+  },
+  {
+    "question": "How is design thinking applied in the corpus?",
+    "expectedTopicKeywords": ["design thinking"],
+    "minCitations": 1
+  },
+  {
+    "question": "What is discussed about resilience in innovation education?",
+    "expectedTopicKeywords": ["resilience", "innovation"],
+    "minCitations": 1
+  }
+]
