@@ -47,12 +47,10 @@
   --color-paper: var(--paper);
   --color-rule: var(--rule);
 
-  /* typography — primary sans, editorial serif (italic accents only), mono */
-  --font-sans: var(--font-instrument-sans), "Helvetica Neue", "Arial Nova", system-ui, sans-serif;
-  --font-serif: var(--font-instrument-serif), "Iowan Old Style", Georgia, serif;
-  --font-mono: var(--font-jetbrains-mono), "SF Mono", SFMono-Regular, "Menlo", monospace;
+  /* typography — one font, everything. Hanken Grotesk (free Söhne-alike). */
+  --font-sans: var(--font-hanken), "Helvetica Neue", "Arial Nova", system-ui, sans-serif;
+  --font-mono: var(--font-hanken), ui-monospace, monospace;
   --font-heading: var(--font-sans);
-  --color-serif: var(--font-serif);
 
   /* radii — measured, never blobby */
   --radius-sm: 2px;
@@ -234,32 +232,28 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* `.font-display` = Instrument Sans at display sizes with tight
-     tracking. Use `.emph` (italic Instrument Serif) for the single
-     accent word in a hero — this is our premium typographic move. */
+  /* `.font-display` = Hanken Grotesk at display sizes with tighter tracking. */
   .font-display {
     font-family: var(--font-sans);
     font-feature-settings: "ss01", "kern", "liga";
     letter-spacing: -0.02em;
   }
 
-  /* .emph — italic Instrument Serif for one emphasised word per hero.
-     Pairs with surrounding Instrument Sans, same foundry, shared DNA. */
+  /* .emph — italic Hanken Grotesk. One emphasis word per hero. */
   .emph {
-    font-family: var(--font-serif);
     font-style: italic;
     font-weight: 400;
-    font-feature-settings: "liga", "dlig", "kern";
-    letter-spacing: -0.01em;
+    letter-spacing: -0.005em;
   }
 
-  /* Small-caps metadata label. The micro-typographic spine. */
+  /* Small-caps metadata label. Same Hanken Grotesk family — high
+     tracking + uppercase is what distinguishes it, not a second font. */
   .label {
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: 10.5px;
-    letter-spacing: 0.26em;
+    letter-spacing: 0.24em;
     text-transform: uppercase;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1;
     color: var(--muted-foreground);
   }
