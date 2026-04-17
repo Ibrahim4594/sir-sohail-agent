@@ -1,4 +1,5 @@
 import * as ToggleGroup from "@radix-ui/react-toggle-group";
+import { Frown, Laugh, Meh, Smile } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import * as React from "react";
 import ReactMarkdown from "react-markdown";
@@ -8,96 +9,22 @@ const EMOJIS = [
   {
     id: "very-sad",
     label: "Terrible",
-    icon: (
-      <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="12" r="10" />
-        <path d="M16 16s-1.5-2-4-2-4 2-4 2" />
-        <path d="M9 9h.01" />
-        <path d="M15 9h.01" />
-        <path d="M9 13v2" stroke="currentColor" />
-        <path d="M15 13v2" stroke="currentColor" />
-      </svg>
-    ),
+    icon: <Frown className="h-5 w-5" strokeWidth={1.75} aria-hidden />,
   },
   {
     id: "sad",
     label: "Bad",
-    icon: (
-      <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="12" r="10" />
-        <path d="M16 16s-1.5-2-4-2-4 2-4 2" />
-        <line x1="9" y1="9" x2="9.01" y2="9" />
-        <line x1="15" y1="9" x2="15.01" y2="9" />
-      </svg>
-    ),
+    icon: <Meh className="h-5 w-5" strokeWidth={1.75} aria-hidden />,
   },
   {
     id: "neutral",
     label: "Okay",
-    icon: (
-      <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="12" r="10" />
-        <path d="M8 13s1.5 2 4 2 4-2 4-2" />
-        <line x1="9" y1="9" x2="9.01" y2="9" />
-        <line x1="15" y1="9" x2="15.01" y2="9" />
-      </svg>
-    ),
+    icon: <Smile className="h-5 w-5" strokeWidth={1.75} aria-hidden />,
   },
   {
     id: "happy",
     label: "Amazing",
-    icon: (
-      <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="12" r="10" />
-        <path d="M8 13s1.5 2 4 2 4-2 4-2" />
-        <path
-          d="M9 9l.5 1.5l1.5 .5l-1.5 .5l-.5 1.5l-.5-1.5l-1.5-.5l1.5-.5z"
-          fill="currentColor"
-          stroke="none"
-        />
-        <path
-          d="M15 9l.5 1.5l1.5 .5l-1.5 .5l-.5 1.5l-.5-1.5l-1.5-.5l1.5-.5z"
-          fill="currentColor"
-          stroke="none"
-        />
-      </svg>
-    ),
+    icon: <Laugh className="h-5 w-5" strokeWidth={1.75} aria-hidden />,
   },
 ];
 
