@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { BrandMark } from '@/components/brand/mark';
+import { CorpusMarquee } from '@/components/landing/corpus-marquee';
+import { HeadlineMark } from '@/components/landing/headline-mark';
+import { HowItWorks } from '@/components/landing/how-it-works';
 import { LiveTrace } from '@/components/landing/live-trace';
 import { createServerSupabase } from '@/lib/supabase/server';
 
@@ -12,17 +15,28 @@ export default async function Home() {
   if (user) redirect('/chat');
 
   let paperCount = 40;
+  let marqueeTitles: string[] = [];
+
+  // Best-effort fetch of the actual corpus. If it's empty or we can't
+  // reach the DB, the marquee falls back to its curated list and the
+  // hero uses the default count.
   try {
-    const { count } = await supabase.from('documents').select('*', { count: 'exact', head: true });
+    const { data, count } = await supabase
+      .from('documents')
+      .select('title, filename', { count: 'exact' })
+      .eq('status', 'ready')
+      .order('uploaded_at', { ascending: false })
+      .limit(20);
     if (typeof count === 'number' && count > 0) paperCount = count;
+    marqueeTitles = (data ?? [])
+      .map((d) => d.title ?? d.filename)
+      .filter((t): t is string => Boolean(t?.trim()));
   } catch {
-    /* keep default */
+    /* keep defaults */
   }
 
   return (
     <main className="relative flex min-h-screen flex-col bg-background text-foreground">
-      {/* Header — thin, left-aligned brand, right-aligned secondary sign-in link.
-          No right-side pill; the EMU attribution moves to the footer credit. */}
       <header
         className="relative z-20 flex items-center justify-between px-6 py-5 sm:px-10 lg:px-14"
         style={{ animation: 'fade 700ms both' }}
@@ -41,7 +55,7 @@ export default async function Home() {
         </Link>
       </header>
 
-      <section className="flex-1 px-6 sm:px-10 lg:px-14">
+      <section className="px-6 sm:px-10 lg:px-14">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-12 gap-x-10 gap-y-16 pt-24 pb-20 lg:pt-32 lg:pb-28">
           {/* Thesis column ------------------------------------------------ */}
           <div className="col-span-12 lg:col-span-7">
@@ -49,7 +63,22 @@ export default async function Home() {
               className="font-display text-[clamp(2.75rem,7vw,6rem)] font-[600] leading-[0.98] tracking-[-0.04em] text-foreground"
               style={{ animation: 'rise 900ms 120ms both' }}
             >
-              <span className="emph text-muted-foreground">Cited,</span>
+              <span className="relative inline-block text-muted-foreground">
+                <span className="emph">Cited,</span>
+                <HeadlineMark
+                  delayMs={1040}
+                  className="pointer-events-none absolute left-0 right-0 text-foreground"
+                  /* Underline sits on a track just below the italic
+                     word. `top: 100%` + a small negative inset on the
+                     SVG's `overflow: visible` keeps the stroke from
+                     hitting descenders. */
+                  style={{
+                    top: '100%',
+                    height: '0.22em',
+                    marginTop: '-0.08em',
+                  }}
+                />
+              </span>
               <br />
               not guessed.
             </h1>
@@ -85,12 +114,9 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* Proof column — live client-side trace. Types the question,
-              pauses to "think", streams the answer with inline citation
-              markers, then reveals the source rows. Reduced-motion
-              short-circuits to the final state. Matches the chat
-              surface exactly so the transition from landing → product
-              feels continuous. */}
+          {/* Proof column — live client-side trace. See live-trace.tsx
+              for the timeline. Matches the chat surface exactly so the
+              transition from landing → product feels continuous. */}
           <aside
             className="col-span-12 lg:col-span-5"
             style={{ animation: 'rise 900ms 560ms both' }}
@@ -100,7 +126,16 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Footer — single thin credit line. No tagline repeat. */}
+      {/* Journal-foot marquee — drifts real paper titles from the
+          corpus along the bottom of the hero. Reads as the running
+          foot of a journal; signals "closed library" without a metric. */}
+      <CorpusMarquee titles={marqueeTitles} />
+
+      {/* How it works — three-line primer that rises in as it scrolls
+          into view. Sized so it lands just below the fold on a laptop;
+          funders and new visitors who scroll get the full story. */}
+      <HowItWorks />
+
       <footer className="relative z-20 border-t border-rule px-6 py-6 sm:px-10 lg:px-14">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
           <p className="label text-muted-foreground">

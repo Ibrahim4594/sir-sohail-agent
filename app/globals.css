@@ -206,6 +206,34 @@
       opacity: 1;
     }
   }
+
+  /* Ink underline drawn under the hero's emphasised word. The
+     dasharray/dashoffset animation uses pathLength=1 so timing is
+     path-agnostic — any SVG path with pathLength=1 will draw over
+     the 900ms window. */
+  @keyframes headline-mark-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Steady horizontal drift for the corpus marquee. 100% shifts the
+     track by its first copy width — since we render two identical
+     copies side by side, the wrap is invisible. Paused on hover via
+     the component's :hover rule, and short-circuited to no motion
+     for users who asked the OS to reduce motion (see the `@media`
+     block at the end of this file). */
+  @keyframes marquee-drift {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
   @keyframes fadeSlideIn {
     to {
       opacity: 1;
@@ -428,5 +456,36 @@
   :focus-visible {
     outline: 2px solid var(--foreground);
     outline-offset: 2px;
+  }
+
+  /* Corpus marquee track — the animation lives in a class so the
+     reduced-motion @media block below can swap it off without
+     resorting to !important. Hover pause ditto. */
+  .corpus-marquee-track {
+    animation: marquee-drift 72s linear infinite;
+  }
+  .corpus-marquee-track:hover {
+    animation-play-state: paused;
+  }
+
+  /* Headline underline stroke. The delay is set inline per-instance
+     so the hero can tune when the stroke begins drawing. */
+  .headline-mark-stroke {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: headline-mark-draw 900ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
+}
+
+/* Motion accommodations. If the OS preference is `reduce`, jump the
+   CSS-driven landing animations to their final frame. The live
+   trace's JS timeline handles this separately in its own component. */
+@media (prefers-reduced-motion: reduce) {
+  .corpus-marquee-track {
+    animation: none;
+  }
+  .headline-mark-stroke {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 }
