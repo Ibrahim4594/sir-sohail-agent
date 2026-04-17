@@ -22,12 +22,12 @@ const hanken = Hanken_Grotesk({
 
 export const metadata: Metadata = {
   title: {
-    default: "Sir Sohail's Research Assistant",
-    template: "%s — Sir Sohail's",
+    default: 'Ibid — cited, not guessed.',
+    template: '%s — Ibid',
   },
   description:
-    'A chat agent bound to a closed corpus of peer-reviewed papers. Every claim is footnoted; every footnote opens the exact page of the source.',
-  applicationName: "Sir Sohail's Research Assistant",
+    'Ibid is a research assistant bound to a closed corpus of peer-reviewed papers. Every claim is footnoted; every footnote opens the exact page of the source. A Sir Sohail project at Eastern Michigan University.',
+  applicationName: 'Ibid',
   authors: [{ name: 'Eastern Michigan University' }],
   robots: { index: false, follow: false },
 };
@@ -39,9 +39,30 @@ export const viewport: Viewport = {
   ],
 };
 
+/**
+ * FOUC-prevention script. Runs in <head> before React hydrates so the
+ * correct theme class is already on <html> when the first paint
+ * happens. Without this you'd briefly see the light theme while the
+ * useTheme effect mounts, then snap to dark — the classic dark-mode
+ * flash. Mirrors the logic in lib/use-theme.ts.
+ */
+const THEME_INIT_SCRIPT = `
+(function(){try{
+  var t = localStorage.getItem('theme');
+  if (t !== 'light' && t !== 'dark') {
+    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  if (t === 'dark') document.documentElement.classList.add('dark');
+} catch (e) {}})();
+`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${hanken.variable} h-full antialiased`}>
+    <html lang="en" className={`${hanken.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: inline theme init must run before hydration */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col">
         {/* Skip-to-content — a11y bypass block for keyboard + SR users. */}
         <a
