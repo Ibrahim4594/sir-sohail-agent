@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { BrandMark } from '@/components/brand/mark';
+import { LiveTrace } from '@/components/landing/live-trace';
 import { createServerSupabase } from '@/lib/supabase/server';
 
 export default async function Home() {
@@ -84,47 +85,17 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* Proof column — a worked example of what Ibid actually does.
-              This replaces a "hero metric" with a real cited answer. The
-              type treatment matches the chat surface so the transition
-              from landing → product feels continuous. */}
+          {/* Proof column — live client-side trace. Types the question,
+              pauses to "think", streams the answer with inline citation
+              markers, then reveals the source rows. Reduced-motion
+              short-circuits to the final state. Matches the chat
+              surface exactly so the transition from landing → product
+              feels continuous. */}
           <aside
             className="col-span-12 lg:col-span-5"
             style={{ animation: 'rise 900ms 560ms both' }}
           >
-            <div className="flex flex-col gap-7 border-l border-rule pl-8 lg:pl-10">
-              <p className="label">A worked example</p>
-
-              <blockquote className="font-display text-[22px] font-[400] leading-[1.28] tracking-[-0.018em] text-foreground">
-                “Does problem-based learning improve entrepreneurship outcomes for undergraduates?”
-              </blockquote>
-
-              <div className="space-y-4 text-[15px] leading-[1.65] text-foreground/85">
-                <p>
-                  Students enrolled in problem-based entrepreneurship courses showed measurable
-                  gains in opportunity recognition and self-efficacy compared to lecture-based
-                  cohorts
-                  <ExampleCite n={1} />. Gains were strongest when coursework culminated in a
-                  real-world pitch to external stakeholders
-                  <ExampleCite n={2} />.
-                </p>
-              </div>
-
-              <dl className="space-y-3 border-t border-rule pt-5 font-mono text-[11px] tracking-[0.04em]">
-                <SourceRef
-                  n={1}
-                  author="Bell, Bell & Bell"
-                  title="Entrepreneurship education as a field of research"
-                  loc="p. 12"
-                />
-                <SourceRef
-                  n={2}
-                  author="Rae & Melton"
-                  title="Developing an entrepreneurial mindset through project-based learning"
-                  loc="p. 31"
-                />
-              </dl>
-            </div>
+            <LiveTrace />
           </aside>
         </div>
       </section>
@@ -141,41 +112,5 @@ export default async function Home() {
         </div>
       </footer>
     </main>
-  );
-}
-
-function ExampleCite({ n }: { n: number }) {
-  // Non-interactive citation marker styled like the real chat surface so
-  // the landing sample reads as an authentic rendering, not a mockup.
-  return (
-    <span
-      aria-hidden
-      className="ml-[1px] inline-flex items-baseline align-super font-mono text-[0.58em] leading-none text-foreground"
-      style={{ borderBottom: '1px solid currentColor', padding: '1px 3px', marginRight: '1px' }}
-    >
-      {n}
-    </span>
-  );
-}
-
-function SourceRef({
-  n,
-  author,
-  title,
-  loc,
-}: {
-  n: number;
-  author: string;
-  title: string;
-  loc: string;
-}) {
-  return (
-    <div className="grid grid-cols-[auto_1fr_auto] items-baseline gap-4 text-muted-foreground">
-      <dt className="tabular text-foreground">[{n}]</dt>
-      <dd className="truncate">
-        <span className="text-foreground">{author}.</span> <span className="italic">{title}</span>
-      </dd>
-      <dd className="tabular text-foreground/70">{loc}</dd>
-    </div>
   );
 }
