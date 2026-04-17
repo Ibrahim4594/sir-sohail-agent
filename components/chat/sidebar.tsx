@@ -1,5 +1,7 @@
-import { BookOpenText, PenSquare, ShieldCheck } from 'lucide-react';
+import { BookOpenText, PenSquare, Settings, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
+import { BrandMark } from '@/components/brand/mark';
+import { UserAvatar } from '@/components/chat/user-avatar';
 import {
   Sidebar as ShadSidebar,
   SidebarContent,
@@ -78,7 +80,6 @@ export async function Sidebar({
 
   const list = (data ?? []) as SidebarConversation[];
   const buckets = bucket(list);
-  const initials = (displayName || email).slice(0, 2).toUpperCase();
   const isAdmin = role === 'admin';
 
   return (
@@ -86,20 +87,11 @@ export async function Sidebar({
       {/* Header — monogram + wordmark (wordmark hides when collapsed). */}
       <SidebarHeader className="border-b border-rule p-0">
         <div className="flex h-[68px] items-center gap-3 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-          <Link
-            href="/"
-            className="flex items-center gap-3"
-            aria-label="Sir Sohail's Research Assistant"
-          >
-            <span
-              aria-hidden
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-[5px] bg-foreground text-[12px] font-[600] leading-none tracking-[0.04em] text-background"
-            >
-              {initials}
-            </span>
+          <Link href="/" className="flex items-center gap-3" aria-label="Ibid — home">
+            <BrandMark className="h-8 w-8 shrink-0 text-foreground" />
             <span className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
-              <span className="whitespace-nowrap font-display text-[14.5px] font-[600] leading-[1.1] tracking-[-0.015em] text-foreground">
-                Research Assistant
+              <span className="whitespace-nowrap font-display text-[15px] font-[600] italic leading-[1.1] tracking-[-0.015em] text-foreground">
+                Ibid.
               </span>
               <span className="label mt-[5px] whitespace-nowrap">Sir Sohail &middot; EMU</span>
             </span>
@@ -128,6 +120,14 @@ export async function Sidebar({
                   <Link href="/overview">
                     <BookOpenText strokeWidth={1.75} aria-hidden />
                     <span>Corpus overview</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Settings" size="default">
+                  <Link href="/settings">
+                    <Settings strokeWidth={1.75} aria-hidden />
+                    <span>Settings</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -174,32 +174,14 @@ export async function Sidebar({
 
       <SidebarFooter className="border-t border-rule p-2">
         <div className="group-data-[collapsible=icon]:hidden">
-          <AccountMenu
-            email={email}
-            displayName={displayName}
-            initials={initials}
-            role={role}
-            avatarUrl={avatarUrl}
-          />
+          <AccountMenu email={email} displayName={displayName} role={role} avatarUrl={avatarUrl} />
         </div>
         <div className="hidden group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-          {avatarUrl ? (
-            // biome-ignore lint/performance/noImgElement: profile URLs come from external OAuth providers
-            <img
-              src={avatarUrl}
-              alt=""
-              className="h-8 w-8 rounded-[5px] object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <span
-              aria-hidden
-              className="grid h-8 w-8 place-items-center rounded-[5px] bg-foreground text-[12px] font-[600] leading-none tracking-[0.04em] text-background"
-              title={displayName || email}
-            >
-              {initials}
-            </span>
-          )}
+          <UserAvatar
+            avatarUrl={avatarUrl}
+            displayName={displayName || email}
+            className="h-8 w-8"
+          />
         </div>
       </SidebarFooter>
 
