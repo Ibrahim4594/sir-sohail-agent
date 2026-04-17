@@ -11,6 +11,18 @@ export default async function ExistingConversation({
   const { conversationId } = await params;
   const supabase = await createServerSupabase();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = user
+    ? await supabase.from('profiles').select('display_name').eq('id', user.id).single()
+    : { data: null };
+  const displayName = profile?.display_name ?? user?.email ?? undefined;
+  const avatarUrl =
+    (user?.user_metadata as { avatar_url?: string; picture?: string } | null)?.avatar_url ??
+    (user?.user_metadata as { picture?: string } | null)?.picture ??
+    null;
+
   const { data: conv } = await supabase
     .from('conversations')
     .select('id, title')
@@ -33,7 +45,14 @@ export default async function ExistingConversation({
       citations: (m.citations as unknown as Citation[] | null) ?? undefined,
     }));
 
-  return <ChatShell initialId={conversationId} initialMessages={initialMessages} />;
+  return (
+    <ChatShell
+      initialId={conversationId}
+      initialMessages={initialMessages}
+      displayName={displayName}
+      avatarUrl={avatarUrl}
+    />
+  );
 }
 
 export async function generateMetadata({

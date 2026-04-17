@@ -13,6 +13,10 @@ export default async function NewChatPage() {
     : { data: null };
 
   const displayName = profile?.display_name ?? user?.email ?? undefined;
+  const avatarUrl =
+    (user?.user_metadata as { avatar_url?: string; picture?: string } | null)?.avatar_url ??
+    (user?.user_metadata as { picture?: string } | null)?.picture ??
+    null;
 
-  return <ChatShell initialMessages={[]} displayName={displayName} />;
+  return <ChatShell initialMessages={[]} displayName={displayName} avatarUrl={avatarUrl} />;
 }
