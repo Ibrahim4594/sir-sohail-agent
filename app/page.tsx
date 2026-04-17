@@ -1,6 +1,9 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { GoogleButton } from '@/components/auth/google-button';
+import { BrandMark } from '@/components/brand/mark';
 import { ColophonStat } from '@/components/landing/colophon-stat';
+import { LiquidButton } from '@/components/liquid-glass-button';
+import { AuroraBackground } from '@/components/ui/aurora-background';
 import { createServerSupabase } from '@/lib/supabase/server';
 
 export default async function Home() {
@@ -20,70 +23,87 @@ export default async function Home() {
 
   return (
     <main className="relative flex min-h-screen flex-col bg-background text-foreground">
-      {/* Slim, single-purpose masthead — no redundant university label */}
       <header
-        className="flex items-center justify-between border-b border-rule px-6 py-5 sm:px-10 lg:px-14"
+        className="relative z-20 flex items-center justify-between border-b border-rule bg-background/80 px-6 py-5 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:px-10 lg:px-14"
         style={{ animation: 'fade 700ms both' }}
       >
         <div className="flex items-center gap-3">
-          <span
-            aria-hidden
-            className="grid h-7 w-7 place-items-center rounded-[3px] bg-foreground font-mono text-[10px] font-semibold leading-none tracking-[0.04em] text-background"
-          >
-            S
+          <BrandMark className="h-7 w-7 text-foreground" />
+          <span className="font-display text-[15px] font-[600] italic leading-none tracking-[-0.015em] text-foreground">
+            Ibid.
           </span>
-          <span className="label">Sir Sohail · Eastern Michigan University</span>
+          <span className="label ml-1 border-l border-rule pl-3 text-muted-foreground/80">
+            Sir Sohail · EMU
+          </span>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="flex-1 px-6 sm:px-10 lg:px-14">
-        <div className="grid grid-cols-12 gap-x-10 pt-24 pb-16 lg:pt-32">
-          <div className="col-span-12 lg:col-span-8">
-            <h1
-              className="font-display text-[clamp(2.5rem,7vw,5.75rem)] font-[600] leading-[1.02] tracking-[-0.035em] text-foreground"
-              style={{ animation: 'rise 900ms 120ms both' }}
-            >
-              A research assistant <span className="emph text-muted-foreground">grounded</span> in a
-              closed library.
-            </h1>
+      {/* Aurora-backed hero. The aurora's rainbow has been shadowed
+          to greyscale via CSS vars in globals.css, so the gradient
+          still drifts but reads as subtle monochrome mist. */}
+      <AuroraBackground className="relative !h-auto flex-1 !justify-start !bg-background">
+        <section className="relative z-10 w-full px-6 sm:px-10 lg:px-14">
+          <div className="grid grid-cols-12 gap-x-10 pt-24 pb-16 lg:pt-32">
+            <div className="col-span-12 lg:col-span-8">
+              <p className="label mb-5" style={{ animation: 'fade 700ms both' }}>
+                Meet Ibid.
+              </p>
 
-            <p
-              className="mt-8 max-w-[58ch] text-[16px] leading-[1.6] text-foreground/85"
-              style={{ animation: 'rise 900ms 260ms both' }}
-            >
-              Ask anything about innovation education, entrepreneurship pedagogy, or project-based
-              learning. The assistant answers only from{' '}
-              <span className="tabular font-[500]">{paperCount}</span> peer-reviewed papers — every
-              claim footnoted, every footnote clickable. No claim may escape the library.
-            </p>
+              <h1
+                className="font-display text-[clamp(2.5rem,7vw,5.75rem)] font-[600] leading-[1.02] tracking-[-0.035em] text-foreground"
+                style={{ animation: 'rise 900ms 120ms both' }}
+              >
+                <span className="emph text-muted-foreground">Cited,</span> not guessed.
+              </h1>
 
-            <div
-              className="mt-10 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-6"
-              style={{ animation: 'rise 900ms 400ms both' }}
-            >
-              <GoogleButton className="max-w-xs" />
-              <p className="label">Sign in to begin</p>
+              <p
+                className="mt-8 max-w-[58ch] text-[16px] leading-[1.6] text-foreground/85"
+                style={{ animation: 'rise 900ms 260ms both' }}
+              >
+                Ibid is a research assistant bound to a closed library of{' '}
+                <span className="tabular font-[500]">{paperCount}</span> peer-reviewed papers on
+                innovation education, entrepreneurship pedagogy, and project-based learning. Every
+                claim is footnoted; every footnote opens the exact page of its source. Nothing
+                escapes the library.
+              </p>
+
+              <div
+                className="mt-10 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-6"
+                style={{ animation: 'rise 900ms 400ms both' }}
+              >
+                <Link
+                  href="/sign-in"
+                  aria-label="Enter the corpus — sign in with Google"
+                  className="inline-flex rounded-full outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
+                >
+                  <LiquidButton size="xl" className="rounded-full" tabIndex={-1}>
+                    <span className="font-[500] tracking-[-0.005em]">Enter the corpus</span>
+                    <span aria-hidden className="ml-1">
+                      →
+                    </span>
+                  </LiquidButton>
+                </Link>
+                <p className="label">Google sign-in · one click</p>
+              </div>
             </div>
+
+            <aside
+              className="col-span-12 mt-16 flex flex-col gap-10 lg:col-span-4 lg:mt-0 lg:border-l lg:border-rule lg:pl-10"
+              style={{ animation: 'rise 900ms 560ms both' }}
+            >
+              <ColophonStat value={paperCount} label="Source papers, vector-indexed" />
+
+              <dl className="divide-y divide-rule border-y border-rule">
+                <SpecRow term="Retrieval" value="pgvector · top-K 8" />
+                <SpecRow term="Safeguards" value="3-layer grounding" />
+              </dl>
+            </aside>
           </div>
+        </section>
+      </AuroraBackground>
 
-          <aside
-            className="col-span-12 mt-16 flex flex-col gap-10 lg:col-span-4 lg:mt-0 lg:border-l lg:border-rule lg:pl-10"
-            style={{ animation: 'rise 900ms 560ms both' }}
-          >
-            <ColophonStat value={paperCount} label="Source papers, vector-indexed" />
-
-            <dl className="divide-y divide-rule border-y border-rule">
-              <SpecRow term="Retrieval" value="pgvector · top-K 8" />
-              <SpecRow term="Generation" value="Gemma 4 · local" />
-              <SpecRow term="Safeguards" value="3-layer grounding" />
-            </dl>
-          </aside>
-        </div>
-      </section>
-
-      <footer className="border-t border-rule px-6 py-5 sm:px-10 lg:px-14">
-        <p className="label text-center sm:text-left">Grounded &amp; cited. Never guessed.</p>
+      <footer className="relative z-20 border-t border-rule bg-background px-6 py-5 sm:px-10 lg:px-14">
+        <p className="label text-center sm:text-left">Ibid. — cited, not guessed.</p>
       </footer>
     </main>
   );
