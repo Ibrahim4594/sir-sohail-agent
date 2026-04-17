@@ -175,6 +175,37 @@
       transform: translateY(0);
     }
   }
+
+  /* Ink-drawn underline under a source's author, triggered just after
+     the row itself has settled. Scales from left so it reads as being
+     drawn, not fading in. Left-origin transform is set by the author
+     span's `transform-origin: left center`. */
+  --animate-source-underline: source-underline 620ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  @keyframes source-underline {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* Low-frequency pulse for the "live" status dot on the landing
+     trace. Two steps of hold, one soft bloom, so the eye registers it
+     as a heartbeat and not a flicker. */
+  --animate-live-pulse: live-pulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  @keyframes live-pulse {
+    0%,
+    45%,
+    100% {
+      transform: scale(1);
+      opacity: 0.8;
+    }
+    22% {
+      transform: scale(1.4);
+      opacity: 1;
+    }
+  }
   @keyframes fadeSlideIn {
     to {
       opacity: 1;

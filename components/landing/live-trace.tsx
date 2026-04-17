@@ -51,10 +51,21 @@ const ANSWER: Token[] = [
 // the hero's rise animation has already played. Slow enough to register
 // as "the product is working," fast enough that nobody stares at it.
 const START_DELAY = 900;
-const TYPE_MS = 22;
-const THINK_MS = 480;
+const TYPE_MS = 26;
+const TYPE_JITTER = 0.35; // ±35% per character — kills the mechanical feel
+const PUNCT_PAUSE_MS = 120; // extra dwell after comma/period for human rhythm
+const THINK_MS = 500;
 const STREAM_MS = 55;
 const SETTLE_MS = 320;
+
+function nextTypeDelay(previousChar: string | undefined): number {
+  const jitter = 1 + (Math.random() - 0.5) * TYPE_JITTER * 2;
+  const base = TYPE_MS * jitter;
+  if (previousChar === ',' || previousChar === '.' || previousChar === '?') {
+    return base + PUNCT_PAUSE_MS;
+  }
+  return base;
+}
 
 type Phase = 'pre' | 'typing' | 'thinking' | 'streaming' | 'settling' | 'done';
 
@@ -86,7 +97,8 @@ export function LiveTrace() {
       setPhase('thinking');
       return;
     }
-    const t = window.setTimeout(() => setTypedLen((n) => n + 1), TYPE_MS);
+    const delay = nextTypeDelay(QUESTION[typedLen - 1]);
+    const t = window.setTimeout(() => setTypedLen((n) => n + 1), delay);
     return () => window.clearTimeout(t);
   }, [phase, typedLen]);
 
@@ -122,7 +134,14 @@ export function LiveTrace() {
 
   return (
     <div className="flex flex-col gap-7 border-l border-rule pl-8 lg:pl-10">
-      <p className="label">A live trace</p>
+      <p className="label inline-flex items-center gap-2">
+        <span
+          aria-hidden
+          className="inline-block h-[5px] w-[5px] rounded-full bg-foreground"
+          style={{ animation: 'var(--animate-live-pulse)' }}
+        />
+        A live trace
+      </p>
 
       {/* Question row — mirrors the chat surface exactly: left avatar,
           right text column in display face. */}
@@ -238,6 +257,11 @@ function SourceRow({
   loc: string;
   delay: number;
 }) {
+  // Author name carries a drawn-in underline that starts right after the
+  // row has settled — this is the "linkback" moment that dramatises how
+  // each inline citation resolves to an exact source. Left-origin so it
+  // reads as being drawn with a pen, not fading in.
+  const underlineDelay = delay + 420;
   return (
     <div
       className="grid grid-cols-[auto_1fr_auto] items-baseline gap-4 text-muted-foreground"
@@ -248,7 +272,18 @@ function SourceRow({
     >
       <dt className="tabular text-foreground">[{n}]</dt>
       <dd className="truncate">
-        <span className="text-foreground">{author}.</span> <span className="italic">{title}</span>
+        <span className="relative text-foreground">
+          {author}.
+          <span
+            aria-hidden
+            className="absolute right-0 bottom-[-1px] left-0 block h-px origin-left bg-foreground"
+            style={{
+              animation: 'var(--animate-source-underline)',
+              animationDelay: `${underlineDelay}ms`,
+            }}
+          />
+        </span>{' '}
+        <span className="italic">{title}</span>
       </dd>
       <dd className="tabular text-foreground/70">{loc}</dd>
     </div>
