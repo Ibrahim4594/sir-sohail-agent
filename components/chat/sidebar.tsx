@@ -18,25 +18,37 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { AccountMenu } from './account-menu';
 import { ConversationRail } from './conversation-rail';
 
-export type SidebarConversation = { id: string; title: string | null; updated_at: string };
+export type SidebarConversation = {
+  id: string;
+  title: string | null;
+  updated_at: string;
+  pinned_at: string | null;
+};
 
 function bucket(rows: SidebarConversation[]): {
+  pinned: SidebarConversation[];
   today: SidebarConversation[];
   week: SidebarConversation[];
   older: SidebarConversation[];
 } {
   const now = Date.now();
   const DAY = 1000 * 60 * 60 * 24;
+  const pinned: SidebarConversation[] = [];
   const today: SidebarConversation[] = [];
   const week: SidebarConversation[] = [];
   const older: SidebarConversation[] = [];
   for (const c of rows) {
+    if (c.pinned_at) {
+      pinned.push(c);
+      continue;
+    }
     const age = now - new Date(c.updated_at).getTime();
     if (age < DAY) today.push(c);
     else if (age < 7 * DAY) week.push(c);
     else older.push(c);
   }
-  return { today, week, older };
+  pinned.sort((a, b) => (b.pinned_at ?? '').localeCompare(a.pinned_at ?? ''));
+  return { pinned, today, week, older };
 }
 
 /**
@@ -59,9 +71,10 @@ export async function Sidebar({
   const supabase = await createServerSupabase();
   const { data } = await supabase
     .from('conversations')
-    .select('id, title, updated_at')
+    .select('id, title, updated_at, pinned_at')
+    .order('pinned_at', { ascending: false, nullsFirst: false })
     .order('updated_at', { ascending: false })
-    .limit(60);
+    .limit(80);
 
   const list = (data ?? []) as SidebarConversation[];
   const buckets = bucket(list);
@@ -149,6 +162,7 @@ export async function Sidebar({
             </SidebarGroup>
           ) : (
             <ConversationRail
+              pinned={buckets.pinned}
               today={buckets.today}
               week={buckets.week}
               older={buckets.older}

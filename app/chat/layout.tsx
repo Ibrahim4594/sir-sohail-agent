@@ -36,7 +36,7 @@ export default async function ChatLayout({ children }: { children: React.ReactNo
         role={profile?.role ?? 'student'}
         avatarUrl={avatarUrl}
       />
-      <SidebarInset className="relative min-w-0 overflow-hidden bg-background">
+      <SidebarInset id="main" className="relative min-w-0 overflow-hidden bg-background">
         {/* Tiny floating toggle, visible only on small screens where the
             sidebar acts as a drawer. Cmd/Ctrl+B still works everywhere. */}
         <div className="absolute left-3 top-3 z-20 md:hidden">
