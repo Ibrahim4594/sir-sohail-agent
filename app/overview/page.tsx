@@ -34,7 +34,7 @@ export default async function OverviewPage() {
             </Link>
           </div>
 
-          <div className="mt-12 grid divide-x divide-rule border-y border-rule sm:grid-cols-3">
+          <div className="mt-12 grid divide-x divide-border/60 sm:grid-cols-3">
             <Stat value={list.length} suffix="papers" label="Total documents" />
             <Stat value={totalPages} suffix="pages" label="Indexed passages" />
             <Stat value="ℵ₀" suffix="closed" label="A bounded library" literal />

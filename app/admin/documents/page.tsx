@@ -46,7 +46,7 @@ export default async function AdminDocumentsPage() {
       </header>
 
       <section className="mx-auto max-w-5xl px-8 pt-10">
-        <div className="grid divide-x divide-rule border-y border-rule sm:grid-cols-3">
+        <div className="grid divide-x divide-border/60 sm:grid-cols-3">
           <Stat label="Ready" value={counts.ready} />
           <Stat label="Processing" value={counts.processing} />
           <Stat label="Failed" value={counts.failed} />
