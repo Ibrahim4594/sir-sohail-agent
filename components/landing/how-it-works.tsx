@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 /**
@@ -103,6 +104,32 @@ export function HowItWorks() {
             </li>
           ))}
         </ol>
+
+        {/* Bottom CTA repeat — closes the loop: after reading the three
+            steps, the natural next move is "try it." Staggered in
+            after the last step finishes rising. */}
+        <div
+          style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(14px)',
+            transition: `opacity 640ms ease-out ${180 + STEPS.length * 140}ms, transform 640ms cubic-bezier(0.2, 0.8, 0.2, 1) ${180 + STEPS.length * 140}ms`,
+          }}
+          className="col-span-12 flex flex-col items-start gap-3 border-t border-rule pt-10 sm:flex-row sm:items-center sm:justify-between lg:col-span-8 lg:col-start-5"
+        >
+          <p className="label text-muted-foreground">Ready when you are.</p>
+          <Link
+            href="/sign-in"
+            className="group inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-[13px] font-[500] tracking-[-0.005em] text-background outline-none transition hover:bg-foreground/90 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            Enter the corpus
+            <span
+              aria-hidden
+              className="translate-x-0 transition-transform duration-300 group-hover:translate-x-0.5"
+            >
+              →
+            </span>
+          </Link>
+        </div>
       </div>
     </section>
   );

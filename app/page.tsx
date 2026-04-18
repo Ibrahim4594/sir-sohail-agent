@@ -5,6 +5,7 @@ import { CorpusMarquee } from '@/components/landing/corpus-marquee';
 import { HeadlineMark } from '@/components/landing/headline-mark';
 import { HowItWorks } from '@/components/landing/how-it-works';
 import { LiveTrace } from '@/components/landing/live-trace';
+import { Tenets } from '@/components/landing/tenets';
 import { createServerSupabase } from '@/lib/supabase/server';
 
 export default async function Home() {
@@ -135,6 +136,12 @@ export default async function Home() {
           into view. Sized so it lands just below the fold on a laptop;
           funders and new visitors who scroll get the full story. */}
       <HowItWorks />
+
+      {/* Tenets — stagger stack of Ibid's behavioural commitments, each
+          card pointing to the exact file where the rule is enforced.
+          Brand thesis expressed as UI: "we say it, we code it, you can
+          verify." */}
+      <Tenets />
 
       <footer className="relative z-20 border-t border-rule px-6 py-6 sm:px-10 lg:px-14">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">

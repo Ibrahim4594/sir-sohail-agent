@@ -1,0 +1,285 @@
+'use client';
+
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { cn } from '@/lib/utils';
+
+/**
+ * Tenets — stagger-stack of Ibid's commitments.
+ *
+ * Visual pattern inspired by the stagger-testimonials shape (octagonal
+ * cards, center-plus-fanned positions, rotation). Content is entirely
+ * original: each card is a real behavioural commitment enforced in
+ * this codebase, with a file anchor under it so the claim is
+ * verifiable — it's the brand thesis ("cited, not guessed") expressed
+ * as UI. Not a testimonial. No avatars.
+ *
+ * Structure:
+ *   - Center card (z-10, inverted colors) holds the currently selected tenet
+ *   - Flanking cards fan out with translateX, a small y-offset, and
+ *     a gentle rotation; clicking a flanking card rotates it to center
+ *   - Prev/next arrows below the stack
+ *
+ * State: a single array of tenets, reordered on move. We use a stable
+ * `id` as the React key so cards animate between positions cleanly
+ * rather than unmount/remount.
+ */
+
+type Tenet = { id: string; claim: string; anchor: string };
+
+const TENETS: Tenet[] = [
+  {
+    id: 'footnotes',
+    claim: 'Every claim is footnoted. Every footnote opens the exact page of its source.',
+    anchor: 'lib/citation/verify.ts',
+  },
+  {
+    id: 'closed-library',
+    claim: 'Forty peer-reviewed papers. Closed library. Nothing outside is ever invented.',
+    anchor: 'lib/prompt/system-prompt.ts',
+  },
+  {
+    id: 'refusal',
+    claim:
+      'If no passage clears the 0.4 cosine threshold, the LLM is skipped and the answer is a soft refusal.',
+    anchor: 'lib/retrieval/threshold.ts',
+  },
+  {
+    id: 'verification',
+    claim:
+      'Every inline citation marker is mapped back to a retrieved chunk — unmapped markers are flagged invalid.',
+    anchor: 'lib/citation/verify.ts',
+  },
+  {
+    id: 'provider-swap',
+    claim:
+      'Local Ollama for development. Google Gemini for production. One env-var flip; no rewrite.',
+    anchor: 'lib/llm/model.ts',
+  },
+  {
+    id: 'no-web',
+    claim:
+      'The chat surface never reaches the web. No Wikipedia, no Google, no arXiv — the corpus is the world.',
+    anchor: 'app/api/chat/route.ts',
+  },
+  {
+    id: 'adjacent',
+    claim:
+      'When the corpus can\u2019t answer, Ibid says so in plain language and offers adjacent topics it does cover.',
+    anchor: 'lib/prompt/system-prompt.ts',
+  },
+  {
+    id: 'pdf-verify',
+    claim:
+      'The PDF viewer opens the cited page directly. You verify in a single click, not a bibliography crawl.',
+    anchor: 'components/chat/pdf-viewer.tsx',
+  },
+];
+
+const CARD_LARGE = 340;
+const CARD_SMALL = 272;
+
+export function Tenets() {
+  const [list, setList] = useState<Tenet[]>(TENETS);
+  const [cardSize, setCardSize] = useState(CARD_LARGE);
+
+  // Card size tracks viewport so the rotation positions stay inside
+  // the frame on narrow screens. Re-reads on resize.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 640px)');
+    const update = () => setCardSize(mq.matches ? CARD_LARGE : CARD_SMALL);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  const handleMove = (steps: number) => {
+    setList((prev) => {
+      const next = [...prev];
+      if (steps > 0) {
+        for (let i = 0; i < steps; i++) {
+          const head = next.shift();
+          if (head) next.push(head);
+        }
+      } else if (steps < 0) {
+        for (let i = 0; i < -steps; i++) {
+          const tail = next.pop();
+          if (tail) next.unshift(tail);
+        }
+      }
+      return next;
+    });
+  };
+
+  return (
+    <section
+      aria-labelledby="tenets-heading"
+      className="border-t border-rule px-6 py-24 sm:px-10 lg:px-14 lg:py-28"
+    >
+      <div className="mx-auto w-full max-w-6xl">
+        <header className="mx-auto mb-20 max-w-2xl text-center">
+          <p className="label">Tenets</p>
+          <h2
+            id="tenets-heading"
+            className="mt-4 font-display text-[clamp(1.875rem,3.2vw,2.625rem)] font-[600] leading-[1.04] tracking-[-0.025em] text-foreground"
+          >
+            Eight commitments.
+            <br />
+            Enforced in code.
+          </h2>
+          <p className="mx-auto mt-5 max-w-[46ch] text-[15px] leading-[1.6] text-foreground/70">
+            These are the behaviours Ibid guarantees — not marketing. Each card points to the exact
+            file where the rule lives.
+          </p>
+        </header>
+
+        <div className="relative mx-auto h-[480px] w-full max-w-[900px] overflow-hidden">
+          {list.map((tenet, index) => {
+            const position = index - Math.floor(list.length / 2);
+            return (
+              <TenetCard
+                key={tenet.id}
+                tenet={tenet}
+                position={position}
+                cardSize={cardSize}
+                onJump={(p) => handleMove(p)}
+              />
+            );
+          })}
+        </div>
+
+        <div className="mt-10 flex items-center justify-center gap-3">
+          <NavButton direction="prev" onClick={() => handleMove(-1)} label="Previous tenet" />
+          <p aria-live="polite" className="label min-w-[6ch] text-center">
+            {formatIndex(list, TENETS)}
+          </p>
+          <NavButton direction="next" onClick={() => handleMove(1)} label="Next tenet" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TenetCard({
+  tenet,
+  position,
+  cardSize,
+  onJump,
+}: {
+  tenet: Tenet;
+  position: number;
+  cardSize: number;
+  onJump: (p: number) => void;
+}) {
+  const isCenter = position === 0;
+  const isFar = Math.abs(position) > 2;
+  const rotate = isCenter ? 0 : position % 2 === 0 ? -2.5 : 2.5;
+  const yOffset = isCenter ? -12 : position % 2 === 0 ? 10 : -10;
+  // The x-offset scales with card size so the fan stays inside the stack
+  // on both breakpoints. 0.52 keeps the third card from pushing past the
+  // overflow-hidden clip on a 900px max-width container.
+  const xOffset = position * (cardSize * 0.52);
+
+  // Cards more than 2 positions away fade out so the stack stays
+  // readable with 8 tenets in play.
+  const opacity = isFar ? 0 : 1;
+  const z = isCenter ? 20 : 10 - Math.abs(position);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onJump(position)}
+      aria-label={isCenter ? `Current tenet: ${tenet.claim}` : `View tenet: ${tenet.claim}`}
+      aria-pressed={isCenter}
+      tabIndex={isCenter ? 0 : -1}
+      className={cn(
+        'absolute left-1/2 top-1/2 cursor-pointer border p-8 text-left transition-all duration-500 ease-in-out',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-4 focus-visible:ring-offset-background',
+        isCenter
+          ? 'border-foreground bg-foreground text-background shadow-[0_14px_0_0_var(--rule)]'
+          : 'border-rule bg-background text-foreground hover:border-foreground/60',
+      )}
+      style={{
+        width: cardSize,
+        height: cardSize,
+        zIndex: z,
+        opacity,
+        pointerEvents: isFar ? 'none' : 'auto',
+        // Octagonal clip — 26px corners keeps the silhouette distinctive
+        // without feeling overly decorative.
+        clipPath: `polygon(26px 0%, calc(100% - 26px) 0%, 100% 26px, 100% 100%, calc(100% - 26px) 100%, 26px 100%, 0 100%, 0 0)`,
+        transform: `translate(-50%, -50%) translateX(${xOffset}px) translateY(${yOffset}px) rotate(${rotate}deg)`,
+      }}
+    >
+      <div className="flex h-full flex-col justify-between">
+        <div>
+          <span
+            className={cn(
+              'font-mono text-[11px] tracking-[0.18em]',
+              isCenter ? 'text-background/70' : 'text-muted-foreground',
+            )}
+          >
+            {tenet.id.toUpperCase().replace(/-/g, ' · ')}
+          </span>
+          <blockquote
+            className={cn(
+              'mt-5 font-display font-[500] tracking-[-0.015em]',
+              isCenter ? 'text-[20px] leading-[1.32]' : 'text-[17px] leading-[1.35]',
+            )}
+          >
+            {tenet.claim}
+          </blockquote>
+        </div>
+        <p
+          className={cn(
+            'pt-6 font-mono text-[11px] tracking-[0.04em]',
+            isCenter ? 'text-background/60' : 'text-muted-foreground',
+          )}
+        >
+          <span
+            className={cn('border-b pb-[1px]', isCenter ? 'border-background/30' : 'border-rule')}
+          >
+            {tenet.anchor}
+          </span>
+        </p>
+      </div>
+    </button>
+  );
+}
+
+function formatIndex(current: Tenet[], original: Tenet[]) {
+  const center = current[Math.floor(current.length / 2)];
+  const idx = center ? original.findIndex((t) => t.id === center.id) : 0;
+  const n = String(idx + 1).padStart(2, '0');
+  const total = String(original.length).padStart(2, '0');
+  return (
+    <>
+      {n}
+      <span className="mx-1 text-muted-foreground">/</span>
+      {total}
+    </>
+  );
+}
+
+function NavButton({
+  direction,
+  onClick,
+  label,
+}: {
+  direction: 'prev' | 'next';
+  onClick: () => void;
+  label: string;
+}) {
+  const Icon = direction === 'prev' ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="flex h-11 w-11 items-center justify-center rounded-full border border-rule bg-background text-foreground outline-none transition hover:border-foreground hover:bg-foreground hover:text-background focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+    </button>
+  );
+}
