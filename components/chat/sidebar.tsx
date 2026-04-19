@@ -1,4 +1,4 @@
-import { BookOpenText, PenSquare, Settings, ShieldCheck } from 'lucide-react';
+import { BookOpenText, PenSquare, Search, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { BrandMark } from '@/components/brand/mark';
 import {
@@ -25,10 +25,17 @@ export type SidebarConversation = {
 };
 
 /**
- * Server component. ChatGPT-style sidebar: flat chronological list of
- * conversations (no "Today / Last 7 days / Older" buckets), no time
- * badges, offcanvas collapse (fully hidden when toggled off, no icon
- * rail). Primary actions sit at the top, account menu at the bottom.
+ * ChatGPT-style sidebar. Permanent 256px column on desktop.
+ *
+ * Structure (top to bottom):
+ *   - Header:  just the brand mark + wordmark
+ *   - Actions: New chat, Search chats, Corpus, Admin (admins only)
+ *   - Chats:   flat chronological list under a quiet label
+ *   - Footer:  account menu (Settings + Sign out in dropdown)
+ *
+ * Settings is intentionally NOT in the primary actions — it lives
+ * in the account menu, matching ChatGPT. Power users reach it by
+ * clicking their avatar.
  */
 export async function Sidebar({
   email,
@@ -54,45 +61,53 @@ export async function Sidebar({
 
   return (
     <ShadSidebar collapsible="none" variant="sidebar" className="border-r border-rule">
-      {/* Header — brand mark + wordmark */}
+      {/* Header — just the mark + wordmark, no subtitle. 56px tall
+          matching ChatGPT's header height exactly. */}
       <SidebarHeader className="border-b border-rule p-0">
-        <div className="flex h-[60px] items-center gap-2.5 px-3">
-          <Link href="/" className="flex items-center gap-2.5" aria-label="Ibid — home">
-            <BrandMark className="h-7 w-7 shrink-0 text-foreground" />
-            <span className="font-display text-[15px] font-[600] italic leading-none tracking-[-0.015em] text-foreground">
-              Ibid.
-            </span>
-          </Link>
-        </div>
+        <Link
+          href="/"
+          className="flex h-14 items-center gap-2.5 px-4 transition hover:opacity-80"
+          aria-label="Ibid — home"
+        >
+          <BrandMark className="h-6 w-6 shrink-0 text-foreground" />
+          <span className="font-display text-[15px] font-[600] italic leading-none tracking-[-0.015em] text-foreground">
+            Ibid.
+          </span>
+        </Link>
       </SidebarHeader>
 
-      <SidebarContent className="gap-0">
-        {/* Primary actions — ChatGPT pattern: big primary CTA at top,
-            followed by ancillary links. */}
-        <SidebarGroup className="px-2 py-2">
+      <SidebarContent className="gap-0 px-2 py-3">
+        {/* Primary actions — rounded rows with subtle hover, tight
+            vertical rhythm. Icon and label aligned on a single
+            baseline. Matches ChatGPT's action-row styling. */}
+        <SidebarGroup className="p-0">
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5">
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="New conversation" size="default">
+                <SidebarMenuButton asChild tooltip="New chat" size="default">
                   <Link href="/chat">
-                    <PenSquare strokeWidth={1.75} aria-hidden />
+                    <PenSquare className="size-[18px]" strokeWidth={1.75} aria-hidden />
                     <span>New chat</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Corpus overview" size="default">
-                  <Link href="/overview">
-                    <BookOpenText strokeWidth={1.75} aria-hidden />
-                    <span>Corpus</span>
-                  </Link>
+                <SidebarMenuButton
+                  tooltip="Search chats (coming soon)"
+                  size="default"
+                  disabled
+                  className="cursor-not-allowed opacity-60"
+                  aria-disabled="true"
+                >
+                  <Search className="size-[18px]" strokeWidth={1.75} aria-hidden />
+                  <span>Search chats</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Settings" size="default">
-                  <Link href="/settings">
-                    <Settings strokeWidth={1.75} aria-hidden />
-                    <span>Settings</span>
+                <SidebarMenuButton asChild tooltip="Corpus overview" size="default">
+                  <Link href="/overview">
+                    <BookOpenText className="size-[18px]" strokeWidth={1.75} aria-hidden />
+                    <span>Corpus</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -100,7 +115,7 @@ export async function Sidebar({
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild tooltip="Admin — Documents" size="default">
                     <Link href="/admin/documents">
-                      <ShieldCheck strokeWidth={1.75} aria-hidden />
+                      <ShieldCheck className="size-[18px]" strokeWidth={1.75} aria-hidden />
                       <span>Admin</span>
                     </Link>
                   </SidebarMenuButton>
@@ -110,26 +125,29 @@ export async function Sidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Conversation history — flat chronological list. */}
+        {/* Chat history — flat list under a quiet label. The label
+            is tighter to the list below than typical shadcn spacing. */}
         {list.length === 0 ? (
-          <SidebarGroup className="px-4 pt-6">
-            <p className="label mb-2 text-muted-foreground">No chats yet</p>
-            <p className="text-[12.5px] leading-[1.5] text-muted-foreground">
-              Ask the corpus a question to begin. Your conversations will appear here.
+          <div className="mt-6 px-2">
+            <p className="mb-1.5 px-2 text-[11px] font-[500] uppercase tracking-[0.06em] text-muted-foreground">
+              Chats
             </p>
-          </SidebarGroup>
+            <p className="px-2 text-[12.5px] leading-[1.5] text-muted-foreground">
+              Start a conversation and it will appear here.
+            </p>
+          </div>
         ) : (
-          <SidebarGroup className="px-0 pt-2">
-            <SidebarGroupLabel className="label px-4">Chats</SidebarGroupLabel>
+          <SidebarGroup className="mt-5 p-0">
+            <SidebarGroupLabel className="px-2 text-[11px] font-[500] uppercase tracking-[0.06em] text-muted-foreground">
+              Chats
+            </SidebarGroupLabel>
             <ConversationRail items={list} />
           </SidebarGroup>
         )}
       </SidebarContent>
 
-      {/* mt-auto pushes the footer to the bottom of the flex column
-          regardless of how short the chat list is. Without it, short
-          chat lists leave the footer sitting just below the last row
-          with a big empty gap below. */}
+      {/* Footer pinned to the bottom regardless of chat list length.
+          Account menu inside is a full-width row with avatar + name. */}
       <SidebarFooter className="mt-auto border-t border-rule p-2">
         <AccountMenu email={email} displayName={displayName} role={role} avatarUrl={avatarUrl} />
       </SidebarFooter>
