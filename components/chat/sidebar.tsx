@@ -90,12 +90,9 @@ export async function Sidebar({
             </p>
           </div>
         ) : (
-          <section className="mt-5" aria-label="Chats">
-            <h2 className="mb-1.5 px-2 text-[11px] font-[500] uppercase tracking-[0.06em] text-muted-foreground">
-              Chats
-            </h2>
+          <div className="mt-4">
             <ConversationRail items={list} />
-          </section>
+          </div>
         )}
       </nav>
 
