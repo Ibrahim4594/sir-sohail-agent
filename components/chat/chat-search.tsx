@@ -25,12 +25,7 @@ export function ChatSearch({ conversations }: { conversations: SidebarConversati
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [cursor, setCursor] = useState(0);
-  const [isMac, setIsMac] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setIsMac(navigator.userAgent.toUpperCase().includes('MAC'));
-  }, []);
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -90,7 +85,7 @@ export function ChatSearch({ conversations }: { conversations: SidebarConversati
       >
         <SearchIcon className="size-[18px]" strokeWidth={1.75} aria-hidden />
         <span className="min-w-0 flex-1 truncate text-left">Search chats</span>
-        <kbd className="font-mono text-[10px] text-muted-foreground">{isMac ? '⌘K' : 'Ctrl K'}</kbd>
+        <kbd className="font-mono text-[10px] text-muted-foreground">⌘K</kbd>
       </button>
 
       {open && (
