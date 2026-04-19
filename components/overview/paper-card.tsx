@@ -1,154 +1,88 @@
-import { cn } from '@/lib/utils';
+'use client';
+import { ExternalLink } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 
 /**
- * Derive 1–3 subject tags from a filename by picking the most meaningful words.
- * Deterministic so the UI stays stable.
+ * A single paper in the corpus list. Minimal affordances — index,
+ * title, clipped summary, and an "Open PDF" action that resolves a
+ * short-lived signed URL through /api/pdf-url and opens it in a new
+ * tab. The whole card is the action surface, with the explicit
+ * arrow-link acting as the visible affordance.
  */
-function deriveTags(filename: string, title: string): string[] {
-  const source = `${title} ${filename}`
-    .toLowerCase()
-    .replace(/\.pdf$/i, '')
-    .replace(/[-_]+/g, ' ')
-    .replace(/[^a-z\s]/g, ' ');
-  const stop = new Set([
-    'a',
-    'an',
-    'and',
-    'are',
-    'as',
-    'at',
-    'be',
-    'but',
-    'by',
-    'for',
-    'from',
-    'has',
-    'have',
-    'in',
-    'into',
-    'is',
-    'it',
-    'its',
-    'of',
-    'on',
-    'or',
-    'our',
-    'that',
-    'the',
-    'their',
-    'this',
-    'to',
-    'was',
-    'were',
-    'with',
-    'we',
-    'i',
-    's',
-    'using',
-    'ebsco',
-    'fulltext',
-    'main',
-    'pdf',
-  ]);
-  const keep = [
-    'innovation',
-    'entrepreneurship',
-    'education',
-    'learning',
-    'resilience',
-    'project',
-    'based',
-    'design',
-    'thinking',
-    'bibliometric',
-    'medical',
-    'postgraduates',
-    'nursing',
-    'teaching',
-    'antibiotic',
-    'engagement',
-    'creativity',
-    'pbl',
-    'generative',
-    'artificial',
-    'digital',
-    'career',
-    'sustainable',
-    'respiratory',
-    'eastern',
-    'philosophy',
-    'craft',
-    'social',
-    'evaluation',
-  ];
-  const tokens = source.split(/\s+/).filter((w) => w.length > 3 && !stop.has(w));
-  const scored = tokens.map((t) => ({ t, s: keep.includes(t) ? 2 : 1 })).sort((a, b) => b.s - a.s);
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const { t } of scored) {
-    if (seen.has(t)) continue;
-    seen.add(t);
-    out.push(t);
-    if (out.length === 3) break;
-  }
-  return out;
-}
-
 export function PaperCard({
   index,
+  id,
   title,
   filename,
   pageCount,
   summary,
 }: {
   index: number;
+  id: string;
   title: string;
   filename: string;
   pageCount: number | null;
   summary: string | null;
 }) {
-  const tags = deriveTags(filename, title);
+  const [opening, setOpening] = useState(false);
+
+  const onOpen = useCallback(async () => {
+    if (opening) return;
+    setOpening(true);
+    try {
+      const res = await fetch(`/api/pdf-url?documentId=${id}`);
+      if (!res.ok) {
+        toast.error('Could not open PDF.');
+        return;
+      }
+      const { url } = (await res.json()) as { url: string };
+      // noopener because Supabase signed URLs point to an untrusted
+      // CDN origin — never give it back-reference to our tab.
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch {
+      toast.error('Could not open PDF.');
+    } finally {
+      setOpening(false);
+    }
+  }, [id, opening]);
 
   return (
-    <article
-      className={cn(
-        'group relative flex h-full min-h-[220px] flex-col justify-between border-b border-r border-rule bg-background px-6 py-6 transition',
-        'hover:bg-muted',
-      )}
+    <button
+      type="button"
+      onClick={onOpen}
+      disabled={opening}
+      aria-label={`Open "${title}"`}
+      className="group relative flex h-full w-full flex-col justify-between rounded-md border border-rule bg-background p-5 text-left transition hover:border-foreground hover:bg-muted/60 disabled:opacity-60"
     >
-      <header className="mb-4 flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between gap-3">
         <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-          № {String(index).padStart(3, '0')}
+          {String(index).padStart(2, '0')}
         </span>
         <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
-          {pageCount ?? '—'} pp.
+          {pageCount ?? '—'}pp
         </span>
-      </header>
+      </div>
 
-      <h3 className="font-display text-[19px] leading-[1.2] tracking-[-0.008em] text-foreground">
+      <h3 className="mt-3 font-display text-[16px] leading-[1.3] tracking-[-0.005em] text-foreground">
         {title}
       </h3>
 
-      {summary ? (
-        <p className="mt-3 line-clamp-3 text-[13px] leading-[1.55] text-muted-foreground">
+      {summary && (
+        <p className="mt-2 line-clamp-3 text-[12.5px] leading-[1.55] text-muted-foreground">
           {summary}
         </p>
-      ) : null}
-
-      {tags.length > 0 && (
-        <div className="mt-auto pt-5">
-          <ul className="flex flex-wrap gap-x-3 gap-y-1">
-            {tags.map((t) => (
-              <li
-                key={t}
-                className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground transition group-hover:text-foreground"
-              >
-                {t}
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
-    </article>
+
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <span className="truncate font-mono text-[10px] text-muted-foreground/80" title={filename}>
+          {filename}
+        </span>
+        <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground transition group-hover:text-foreground">
+          Open PDF
+          <ExternalLink className="size-3" strokeWidth={1.75} aria-hidden />
+        </span>
+      </div>
+    </button>
   );
 }

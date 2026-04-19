@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import { PaperCard } from '@/components/overview/paper-card';
-import { NumberTicker } from '@/components/ui/number-ticker';
+import { CorpusList } from '@/components/overview/corpus-list';
 import { createServerSupabase } from '@/lib/supabase/server';
 
 export const metadata = { title: 'Corpus overview' };
@@ -18,33 +17,35 @@ export default async function OverviewPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-rule">
-        <div className="mx-auto max-w-6xl px-8 py-14">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="label mb-4">Catalogue raisonné</p>
-              <h1 className="font-display text-[72px] font-[600] leading-[1.02] tracking-[-0.035em] text-foreground sm:text-[88px]">
-                The <span className="emph text-muted-foreground">Corpus.</span>
+        <div className="mx-auto w-full max-w-5xl px-8 pt-12 pb-8">
+          <div className="flex items-end justify-between gap-6">
+            <div className="min-w-0">
+              <p className="label mb-3">Corpus</p>
+              <h1 className="font-display text-[40px] font-[600] leading-[1.05] tracking-[-0.025em] text-foreground">
+                What Ibid can answer
               </h1>
+              <p className="mt-3 max-w-prose text-[14.5px] leading-[1.55] text-muted-foreground">
+                Every answer comes from one of these peer-reviewed papers. Nothing else. If a
+                question isn't covered here, Ibid will say so rather than guess.
+              </p>
             </div>
-            <Link
-              href="/chat"
-              className="label link shrink-0 pt-2 transition hover:text-foreground"
-            >
+            <Link href="/chat" className="label link shrink-0 transition hover:text-foreground">
               ← Back to chat
             </Link>
           </div>
 
-          <div className="mt-12 grid divide-x divide-border/60 sm:grid-cols-3">
-            <Stat value={list.length} suffix="papers" label="Total documents" />
-            <Stat value={totalPages} suffix="pages" label="Indexed passages" />
-            <Stat value="ℵ₀" suffix="closed" label="A bounded library" literal />
-          </div>
+          {list.length > 0 && (
+            <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+              <span className="text-foreground">{list.length}</span> papers ·{' '}
+              <span className="text-foreground">{totalPages.toLocaleString()}</span> pages
+            </p>
+          )}
         </div>
       </header>
 
       {list.length === 0 ? (
-        <section className="mx-auto max-w-6xl px-8 py-24 text-center">
-          <p className="font-display text-[28px] italic font-[400] leading-[1.2] text-muted-foreground">
+        <section className="mx-auto max-w-5xl px-8 py-24 text-center">
+          <p className="font-display text-[24px] italic font-[400] leading-[1.25] text-muted-foreground">
             The corpus has not been populated yet.
           </p>
           <p className="mt-4 text-sm text-muted-foreground">
@@ -60,59 +61,17 @@ export default async function OverviewPage() {
           </p>
         </section>
       ) : (
-        <section className="mx-auto max-w-6xl px-8 py-16">
-          <div className="grid grid-cols-1 gap-0 border-l border-t border-rule sm:grid-cols-2 lg:grid-cols-3">
-            {list.map((d, i) => (
-              <PaperCard
-                key={d.id}
-                index={i + 1}
-                title={d.title ?? d.filename}
-                filename={d.filename}
-                pageCount={d.page_count}
-                summary={d.summary}
-              />
-            ))}
-          </div>
-        </section>
+        <CorpusList
+          items={list.map((d) => ({
+            id: d.id,
+            title: d.title ?? d.filename,
+            filename: d.filename,
+            pageCount: d.page_count,
+            summary: d.summary,
+            uploadedAt: d.uploaded_at,
+          }))}
+        />
       )}
-
-      <footer className="border-t border-rule">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-6">
-          <p className="label">Grounded &amp; cited. Never guessed.</p>
-          <p className="label">End of catalogue</p>
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-function Stat({
-  value,
-  suffix,
-  label,
-  literal,
-}: {
-  value: number | string;
-  suffix: string;
-  label: string;
-  literal?: boolean;
-}) {
-  return (
-    <div className="px-6 py-6">
-      <p className="label mb-3">{label}</p>
-      <div className="flex items-baseline gap-2">
-        {literal || typeof value !== 'number' ? (
-          <span className="font-display text-[56px] leading-[0.9] font-[300] tabular tracking-[-0.03em] text-foreground">
-            {value}
-          </span>
-        ) : (
-          <NumberTicker
-            value={value}
-            className="font-display text-[56px] leading-[0.9] font-[300] tabular tracking-[-0.03em] text-foreground"
-          />
-        )}
-        <span className="label">{suffix}</span>
-      </div>
     </div>
   );
 }
