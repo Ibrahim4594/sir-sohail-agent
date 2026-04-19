@@ -126,7 +126,11 @@ export async function Sidebar({
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-rule p-2">
+      {/* mt-auto pushes the footer to the bottom of the flex column
+          regardless of how short the chat list is. Without it, short
+          chat lists leave the footer sitting just below the last row
+          with a big empty gap below. */}
+      <SidebarFooter className="mt-auto border-t border-rule p-2">
         <AccountMenu email={email} displayName={displayName} role={role} avatarUrl={avatarUrl} />
       </SidebarFooter>
     </ShadSidebar>
