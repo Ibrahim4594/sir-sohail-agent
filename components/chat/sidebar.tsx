@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { BrandMark } from '@/components/brand/mark';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { AccountMenu } from './account-menu';
+import { ChatSearch } from './chat-search';
 import { ConversationRail } from './conversation-rail';
 
 export type SidebarConversation = {
@@ -66,6 +67,9 @@ export async function Sidebar({
             label="New chat"
             icon={<PenSquare className="size-[18px]" strokeWidth={1.75} aria-hidden />}
           />
+          <li>
+            <ChatSearch conversations={list} />
+          </li>
           <RailLink
             href="/overview"
             label="Corpus"
