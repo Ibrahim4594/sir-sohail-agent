@@ -8,23 +8,26 @@ import { cn } from '@/lib/utils';
  * Drag handle that resizes the sidebar by mutating `--sidebar-width`
  * on the SidebarProvider's root div. Persists to both a cookie (for
  * SSR no-flash on next reload) and localStorage (instant client
- * reads). Respects the shadcn Sidebar's collapsed + mobile states by
- * unmounting when the sidebar isn't visible as a resizable panel.
+ * reads).
  *
- * Double-click resets to the default width.
+ * Implementation notes — the paranoid version, because two earlier
+ * attempts missed a failure mode:
  *
- * Why pointer events + attach-listeners-on-pointerdown:
- *   The earlier React-state-driven approach (setDragging(true) →
- *   useEffect attaches window mousemove) had a gap between the
- *   mousedown and React's commit where fast mouse movement could
- *   slip through without any listener attached. Attaching the move/
- *   up handlers synchronously inside the pointerdown callback closes
- *   that gap — the listener exists before the next event fires.
+ * 1. Listeners attach synchronously in onPointerDown (not via a
+ *    useEffect triggered by setState). The React render window
+ *    between mousedown and a state-driven useEffect is long enough
+ *    on real devices to lose the first pointermoves.
  *
- *   setPointerCapture pins all subsequent pointer events for that
- *   gesture to this element, so even if the cursor leaves the handle
- *   during the drag, every move still reaches us. This is the pattern
- *   VS Code's workbench resizer and Linear's sidebar both use.
+ * 2. Listeners attach to WINDOW, not the handle element. pointer
+ *    capture is convenient but has inconsistent behaviour across
+ *    browsers and silently breaks when the element is inside certain
+ *    stacking contexts. Window listeners catch every event regardless
+ *    of cursor position or occlusion.
+ *
+ * 3. The wrapper is located by walking up the DOM from the handle
+ *    looking for an ancestor with `--sidebar-width` set inline —
+ *    not by querySelector with a class containing a slash, which
+ *    is the bug that silently killed the first two attempts.
  */
 
 const MIN_WIDTH_PX = 200;
@@ -57,99 +60,79 @@ function findWrapper(start: HTMLElement | null): HTMLElement | null {
 export function SidebarResizer() {
   const { state, isMobile } = useSidebar();
   const handleRef = useRef<HTMLButtonElement>(null);
-  const wrapperRef = useRef<HTMLElement | null>(null);
   const [dragging, setDragging] = useState(false);
 
-  // Locate the SidebarProvider on mount. Used as a fast path; every
-  // gesture re-scans as a fallback so HMR reshuffling can't brick the
-  // feature.
+  // Keep a fresh wrapper reference on mount. Not strictly required —
+  // every callback re-scans — but avoids the first scan cost on first
+  // interaction.
   useEffect(() => {
-    wrapperRef.current = findWrapper(handleRef.current);
+    findWrapper(handleRef.current);
   }, []);
 
-  const resolveWrapper = useCallback(() => {
-    if (wrapperRef.current?.isConnected) return wrapperRef.current;
-    wrapperRef.current = findWrapper(handleRef.current);
-    return wrapperRef.current;
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return;
+    const wrapper = findWrapper(handleRef.current);
+    if (!wrapper) {
+      // Diagnostic surface. If this fires, the SidebarProvider root
+      // has lost its `--sidebar-width` inline style — which would be
+      // a regression in components/ui/sidebar.tsx, not this file.
+      console.warn('[SidebarResizer] could not locate sidebar wrapper');
+      return;
+    }
+    e.preventDefault();
+
+    setDragging(true);
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMove = (ev: PointerEvent) => {
+      const clamped = Math.min(MAX_WIDTH_PX, Math.max(MIN_WIDTH_PX, ev.clientX));
+      wrapper.style.setProperty('--sidebar-width', `${clamped}px`);
+    };
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', cleanup);
+      window.removeEventListener('pointercancel', cleanup);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      setDragging(false);
+      const val = wrapper.style.getPropertyValue('--sidebar-width');
+      const num = Number.parseInt(val, 10);
+      if (!Number.isNaN(num)) persist(num);
+    };
+
+    // Window listeners catch every pointer event regardless of where
+    // the cursor is — no pointer capture, no element-bounded events.
+    // This is the pattern that works everywhere.
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', cleanup);
+    window.addEventListener('pointercancel', cleanup);
   }, []);
-
-  const onPointerDown = useCallback(
-    (e: React.PointerEvent<HTMLButtonElement>) => {
-      if (e.button !== 0) return;
-      const wrapper = resolveWrapper();
-      if (!wrapper) return;
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Lock all subsequent pointer events for this gesture to the
-      // handle — even if the cursor leaves the 8px hit zone, every
-      // move still reaches us.
-      const target = e.currentTarget;
-      try {
-        target.setPointerCapture(e.pointerId);
-      } catch {
-        /* some browsers throw on detached capture — harmless */
-      }
-
-      setDragging(true);
-      document.body.style.cursor = 'ew-resize';
-      document.body.style.userSelect = 'none';
-
-      const onMove = (ev: PointerEvent) => {
-        const clamped = Math.min(MAX_WIDTH_PX, Math.max(MIN_WIDTH_PX, ev.clientX));
-        wrapper.style.setProperty('--sidebar-width', `${clamped}px`);
-      };
-      const cleanup = () => {
-        try {
-          target.releasePointerCapture(e.pointerId);
-        } catch {
-          /* ignore */
-        }
-        target.removeEventListener('pointermove', onMove);
-        target.removeEventListener('pointerup', cleanup);
-        target.removeEventListener('pointercancel', cleanup);
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-        setDragging(false);
-        const val = wrapper.style.getPropertyValue('--sidebar-width');
-        const num = Number.parseInt(val, 10);
-        if (!Number.isNaN(num)) persist(num);
-      };
-
-      target.addEventListener('pointermove', onMove);
-      target.addEventListener('pointerup', cleanup);
-      target.addEventListener('pointercancel', cleanup);
-    },
-    [resolveWrapper],
-  );
 
   const onDoubleClick = useCallback(() => {
-    const wrapper = resolveWrapper();
+    const wrapper = findWrapper(handleRef.current);
     if (!wrapper) return;
     wrapper.style.setProperty('--sidebar-width', `${DEFAULT_WIDTH_PX}px`);
     persist(DEFAULT_WIDTH_PX);
-  }, [resolveWrapper]);
+  }, []);
 
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      const wrapper = resolveWrapper();
-      if (!wrapper) return;
-      const current = Number.parseInt(wrapper.style.getPropertyValue('--sidebar-width'), 10);
-      const base = Number.isNaN(current) ? DEFAULT_WIDTH_PX : current;
-      const step = e.shiftKey ? 32 : 8;
-      let next = base;
-      if (e.key === 'ArrowLeft') next = base - step;
-      else if (e.key === 'ArrowRight') next = base + step;
-      else if (e.key === 'Home') next = MIN_WIDTH_PX;
-      else if (e.key === 'End') next = MAX_WIDTH_PX;
-      else return;
-      e.preventDefault();
-      const clamped = Math.min(MAX_WIDTH_PX, Math.max(MIN_WIDTH_PX, next));
-      wrapper.style.setProperty('--sidebar-width', `${clamped}px`);
-      persist(clamped);
-    },
-    [resolveWrapper],
-  );
+  const onKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const wrapper = findWrapper(handleRef.current);
+    if (!wrapper) return;
+    const current = Number.parseInt(wrapper.style.getPropertyValue('--sidebar-width'), 10);
+    const base = Number.isNaN(current) ? DEFAULT_WIDTH_PX : current;
+    const step = e.shiftKey ? 32 : 8;
+    let next = base;
+    if (e.key === 'ArrowLeft') next = base - step;
+    else if (e.key === 'ArrowRight') next = base + step;
+    else if (e.key === 'Home') next = MIN_WIDTH_PX;
+    else if (e.key === 'End') next = MAX_WIDTH_PX;
+    else return;
+    e.preventDefault();
+    const clamped = Math.min(MAX_WIDTH_PX, Math.max(MIN_WIDTH_PX, next));
+    wrapper.style.setProperty('--sidebar-width', `${clamped}px`);
+    persist(clamped);
+  }, []);
 
   if (isMobile || state === 'collapsed') return null;
 
@@ -157,18 +140,17 @@ export function SidebarResizer() {
     <button
       ref={handleRef}
       type="button"
-      aria-label="Resize sidebar. Drag, double-click to reset, or use arrow keys."
+      aria-label="Resize sidebar. Drag, double-click to reset, arrow keys for fine steps."
       onPointerDown={onPointerDown}
       onDoubleClick={onDoubleClick}
       onKeyDown={onKeyDown}
       className={cn(
-        // Reset native button styling so the div-like layout below works.
         'appearance-none border-0 bg-transparent p-0',
-        'absolute inset-y-0 right-0 z-30 hidden w-2 translate-x-1/2 cursor-ew-resize touch-none select-none md:block',
+        'absolute inset-y-0 right-0 z-40 hidden w-2 translate-x-1/2 cursor-ew-resize touch-none select-none md:block',
         'outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2',
-        'after:pointer-events-none after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] after:-translate-x-1/2 after:bg-transparent after:transition-colors',
-        'hover:after:bg-foreground/40',
-        dragging && 'after:bg-foreground/60',
+        'after:pointer-events-none after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] after:-translate-x-1/2 after:bg-foreground/15 after:transition-colors',
+        'hover:after:bg-foreground/50',
+        dragging && 'after:bg-foreground/80',
       )}
     />
   );
