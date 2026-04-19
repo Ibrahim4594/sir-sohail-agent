@@ -19,19 +19,46 @@ async function requireAuthedConversation(id: string) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  if (!user) {
+    console.warn('[conversations] unauthorised request — no session');
+    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
 
-  // RLS will enforce ownership, but verify the row exists first so we can
-  // return 404 distinct from 401/403.
+  // Validate the id up front so a malformed UUID returns 400 instead of
+  // hitting the DB only to be rejected — and distinguishes a bad URL
+  // from a genuine "not found".
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    console.warn('[conversations] malformed id on request:', id);
+    return { error: NextResponse.json({ error: 'Invalid id' }, { status: 400 }) };
+  }
+
+  // maybeSingle() — no-row is null instead of an error, so we can
+  // distinguish a real DB failure from "that id doesn't exist" cleanly.
   const { data: row, error: lookupErr } = await supabase
     .from('conversations')
     .select('id, user_id')
     .eq('id', id)
-    .single();
-  if (lookupErr || !row) {
+    .maybeSingle();
+
+  if (lookupErr) {
+    console.error('[conversations] lookup failed for id %s: %o', id, lookupErr);
+    return { error: NextResponse.json({ error: lookupErr.message }, { status: 500 }) };
+  }
+  if (!row) {
+    console.warn(
+      '[conversations] id %s not visible to user %s (either deleted or RLS hid it)',
+      id,
+      user.id,
+    );
     return { error: NextResponse.json({ error: 'Not found' }, { status: 404 }) };
   }
   if (row.user_id !== user.id) {
+    console.warn(
+      '[conversations] user %s attempted to access %s owned by %s',
+      user.id,
+      id,
+      row.user_id,
+    );
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
   }
   return { supabase };

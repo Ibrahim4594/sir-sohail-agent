@@ -48,6 +48,20 @@ export function ConversationRow({
     if (renaming) inputRef.current?.select();
   }, [renaming]);
 
+  // A 404 from any of these handlers means the server already doesn't
+  // have this row — probably because another tab deleted it or the
+  // sidebar hasn't caught up yet. Either way the right move is to
+  // refresh the list so the ghost row disappears, rather than stand
+  // firm with a scary "could not" toast.
+  const handleStaleRow = () => {
+    toast.info('That conversation is already gone — refreshing list.');
+    if (params?.conversationId === conversation.id) {
+      router.replace('/chat');
+    } else {
+      router.refresh();
+    }
+  };
+
   const commitRename = async () => {
     const title = draft.trim();
     setRenaming(false);
@@ -59,6 +73,10 @@ export function ConversationRow({
       body: JSON.stringify({ title }),
     });
     setBusy(false);
+    if (res.status === 404) {
+      handleStaleRow();
+      return;
+    }
     if (!res.ok) {
       toast.error('Could not rename conversation.');
       setDraft(conversation.title ?? 'Untitled');
@@ -76,6 +94,10 @@ export function ConversationRow({
       body: JSON.stringify({ pin: nextPinned }),
     });
     setBusy(false);
+    if (res.status === 404) {
+      handleStaleRow();
+      return;
+    }
     if (!res.ok) {
       toast.error('Could not update pin state.');
       return;
@@ -90,13 +112,18 @@ export function ConversationRow({
     }
     setBusy(true);
     const res = await fetch(`/api/conversations/${conversation.id}`, { method: 'DELETE' });
+    if (res.status === 404) {
+      // Same outcome the user wanted — row is gone from the DB.
+      // Cleanly return to /chat if we were viewing that convo.
+      handleStaleRow();
+      return;
+    }
     if (!res.ok) {
       toast.error('Could not delete conversation.');
       setBusy(false);
       return;
     }
     toast.success('Conversation deleted.');
-    // If we just deleted the active conversation, go back to /chat.
     if (params?.conversationId === conversation.id) {
       router.replace('/chat');
     } else {
