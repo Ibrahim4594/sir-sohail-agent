@@ -11,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import type { SidebarConversation } from './sidebar';
 
@@ -98,8 +97,6 @@ export function ConversationRow({
     setBusy(true);
     const res = await fetch(`/api/conversations/${conversation.id}`, { method: 'DELETE' });
     if (res.status === 404) {
-      // Same outcome the user wanted — row is gone from the DB.
-      // Cleanly return to /chat if we were viewing that convo.
       handleStaleRow();
       return;
     }
@@ -116,15 +113,12 @@ export function ConversationRow({
     }
   };
 
+  const title = conversation.title ?? 'Untitled';
+
   return (
-    <SidebarMenuItem>
+    <li className="group/row relative">
       {renaming ? (
-        <div
-          className={cn(
-            'flex h-8 items-center gap-2 rounded-md px-2',
-            active ? 'bg-sidebar-accent' : 'bg-muted',
-          )}
-        >
+        <div className="flex h-8 items-center gap-2 rounded-md bg-muted px-2">
           <input
             ref={inputRef}
             value={draft}
@@ -144,34 +138,22 @@ export function ConversationRow({
           />
         </div>
       ) : (
-        <SidebarMenuButton
-          asChild
-          isActive={active}
-          tooltip={conversation.title ?? 'Untitled'}
-          size="default"
+        <Link
+          href={`/chat/${conversation.id}`}
+          title={title}
+          className={cn(
+            'flex h-8 items-center gap-1.5 rounded-md px-2 pr-8 text-[13px] leading-[1.3] transition',
+            active
+              ? 'bg-muted font-[500] text-foreground'
+              : 'font-[400] text-foreground/90 hover:bg-muted',
+            busy && 'pointer-events-none opacity-60',
+          )}
         >
-          <Link
-            href={`/chat/${conversation.id}`}
-            className={cn(busy && 'pointer-events-none opacity-60')}
-          >
-            {conversation.pinned_at && (
-              <Pin className="size-3 shrink-0 text-muted-foreground" strokeWidth={2} aria-hidden />
-            )}
-            {/* ChatGPT-style row: title only. Three-dot menu replaces
-                the trailing area on hover. Padding-right reserves
-                room for the menu trigger so the title doesn't collide
-                with it mid-hover. */}
-            <span
-              className={cn(
-                'min-w-0 flex-1 truncate pr-5 leading-[1.3]',
-                active ? 'font-[500]' : 'font-[400]',
-              )}
-              title={conversation.title ?? 'Untitled'}
-            >
-              {conversation.title ?? 'Untitled'}
-            </span>
-          </Link>
-        </SidebarMenuButton>
+          {conversation.pinned_at && (
+            <Pin className="size-3 shrink-0 text-muted-foreground" strokeWidth={2} aria-hidden />
+          )}
+          <span className="min-w-0 flex-1 truncate">{title}</span>
+        </Link>
       )}
 
       {!renaming && (
@@ -179,8 +161,8 @@ export function ConversationRow({
           <DropdownMenuTrigger
             aria-label="Conversation options"
             className={cn(
-              'absolute right-1 top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-[3px] text-muted-foreground outline-none transition',
-              'opacity-0 group-hover/menu-item:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100',
+              'absolute right-1 top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-muted-foreground outline-none transition',
+              'opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100',
               'hover:bg-foreground/10 hover:text-foreground',
             )}
             onClick={(e) => e.stopPropagation()}
@@ -222,6 +204,6 @@ export function ConversationRow({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-    </SidebarMenuItem>
+    </li>
   );
 }

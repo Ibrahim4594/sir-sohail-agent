@@ -1,18 +1,6 @@
 import { BookOpenText, PenSquare, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { BrandMark } from '@/components/brand/mark';
-import {
-  Sidebar as ShadSidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { AccountMenu } from './account-menu';
 import { ConversationRail } from './conversation-rail';
@@ -25,17 +13,11 @@ export type SidebarConversation = {
 };
 
 /**
- * ChatGPT-style sidebar. Permanent 256px column on desktop.
- *
- * Structure (top to bottom):
- *   - Header:  just the brand mark + wordmark
- *   - Actions: New chat, Search chats, Corpus, Admin (admins only)
- *   - Chats:   flat chronological list under a quiet label
- *   - Footer:  account menu (Settings + Sign out in dropdown)
- *
- * Settings is intentionally NOT in the primary actions — it lives
- * in the account menu, matching ChatGPT. Power users reach it by
- * clicking their avatar.
+ * Left rail — plain flex column, no shadcn Sidebar provider. Three zones
+ * stacked top-to-bottom: header (brand), scrollable nav (actions + chat
+ * list), footer (account menu). h-svh on the aside guarantees the border
+ * and the account row sit on the actual viewport bottom regardless of
+ * how many chats live in the middle zone.
  */
 export async function Sidebar({
   email,
@@ -60,85 +42,80 @@ export async function Sidebar({
   const isAdmin = role === 'admin';
 
   return (
-    <ShadSidebar collapsible="none" variant="sidebar" className="border-r border-rule">
-      {/* Header — just the mark + wordmark, no subtitle. 56px tall
-          matching ChatGPT's header height exactly. */}
-      <SidebarHeader className="border-b border-rule p-0">
+    <aside className="flex h-svh w-[260px] shrink-0 flex-col border-r border-rule bg-sidebar text-sidebar-foreground">
+      <header className="flex h-14 shrink-0 items-center border-b border-rule px-4">
         <Link
           href="/"
-          className="flex h-14 items-center gap-2.5 px-4 transition hover:opacity-80"
           aria-label="Ibid — home"
+          className="flex items-center gap-2.5 transition hover:opacity-80"
         >
           <BrandMark className="h-6 w-6 shrink-0 text-foreground" />
           <span className="font-display text-[15px] font-[600] italic leading-none tracking-[-0.015em] text-foreground">
             Ibid.
           </span>
         </Link>
-      </SidebarHeader>
+      </header>
 
-      <SidebarContent className="gap-0 px-2 py-3">
-        {/* Primary actions — rounded rows with subtle hover, tight
-            vertical rhythm. Icon and label aligned on a single
-            baseline. Matches ChatGPT's action-row styling. */}
-        <SidebarGroup className="p-0">
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="New chat" size="default">
-                  <Link href="/chat">
-                    <PenSquare className="size-[18px]" strokeWidth={1.75} aria-hidden />
-                    <span>New chat</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Corpus overview" size="default">
-                  <Link href="/overview">
-                    <BookOpenText className="size-[18px]" strokeWidth={1.75} aria-hidden />
-                    <span>Corpus</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Admin — Documents" size="default">
-                    <Link href="/admin/documents">
-                      <ShieldCheck className="size-[18px]" strokeWidth={1.75} aria-hidden />
-                      <span>Admin</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <nav
+        aria-label="Sidebar"
+        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-2 py-3"
+      >
+        <ul className="flex flex-col gap-0.5">
+          <RailLink
+            href="/chat"
+            label="New chat"
+            icon={<PenSquare className="size-[18px]" strokeWidth={1.75} aria-hidden />}
+          />
+          <RailLink
+            href="/overview"
+            label="Corpus"
+            icon={<BookOpenText className="size-[18px]" strokeWidth={1.75} aria-hidden />}
+          />
+          {isAdmin && (
+            <RailLink
+              href="/admin/documents"
+              label="Admin"
+              icon={<ShieldCheck className="size-[18px]" strokeWidth={1.75} aria-hidden />}
+            />
+          )}
+        </ul>
 
-        {/* Chat history — flat list under a quiet label. The label
-            is tighter to the list below than typical shadcn spacing. */}
         {list.length === 0 ? (
           <div className="mt-6 px-2">
-            <p className="mb-1.5 px-2 text-[11px] font-[500] uppercase tracking-[0.06em] text-muted-foreground">
+            <p className="mb-1.5 text-[11px] font-[500] uppercase tracking-[0.06em] text-muted-foreground">
               Chats
             </p>
-            <p className="px-2 text-[12.5px] leading-[1.5] text-muted-foreground">
+            <p className="text-[12.5px] leading-[1.5] text-muted-foreground">
               Start a conversation and it will appear here.
             </p>
           </div>
         ) : (
-          <SidebarGroup className="mt-5 p-0">
-            <SidebarGroupLabel className="px-2 text-[11px] font-[500] uppercase tracking-[0.06em] text-muted-foreground">
+          <section className="mt-5" aria-label="Chats">
+            <h2 className="mb-1.5 px-2 text-[11px] font-[500] uppercase tracking-[0.06em] text-muted-foreground">
               Chats
-            </SidebarGroupLabel>
+            </h2>
             <ConversationRail items={list} />
-          </SidebarGroup>
+          </section>
         )}
-      </SidebarContent>
+      </nav>
 
-      {/* Footer pinned to the bottom regardless of chat list length.
-          Account menu inside is a full-width row with avatar + name. */}
-      <SidebarFooter className="mt-auto border-t border-rule p-2">
+      <footer className="shrink-0 border-t border-rule p-2">
         <AccountMenu email={email} displayName={displayName} role={role} avatarUrl={avatarUrl} />
-      </SidebarFooter>
-    </ShadSidebar>
+      </footer>
+    </aside>
+  );
+}
+
+function RailLink({ href, label, icon }: { href: string; label: string; icon: React.ReactNode }) {
+  return (
+    <li>
+      <Link
+        href={href}
+        className="flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-[400] leading-none text-foreground transition hover:bg-muted"
+      >
+        {icon}
+        <span className="truncate">{label}</span>
+      </Link>
+    </li>
   );
 }
