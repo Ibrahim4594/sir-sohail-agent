@@ -1,9 +1,11 @@
 'use client';
-import { ArrowUpRight, Check, Copy, RotateCcw } from 'lucide-react';
+import { ArrowUpRight, Check, Copy, RotateCcw, Square, Volume2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Children, memo, type ReactNode, useCallback, useState } from 'react';
+import { Children, memo, type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { BrandMark } from '@/components/brand/mark';
+import { markdownToPlain } from '@/lib/md-to-plain';
+import { isSpeechSupported, useSpeak } from '@/lib/use-speak';
 import { cn } from '@/lib/utils';
 import { renderInlineCitations } from './citation-ref';
 import { SourcesPanel } from './sources-panel';
@@ -193,12 +195,14 @@ function MessageImpl({
             <SourcesPanel citations={citations} onOpen={onOpenCitation} />
           )}
 
-          {/* Action row — copy + (regenerate on the most recent turn).
-              Visible as soon as the message has stopped streaming, so
-              the user can act the instant the answer settles. */}
+          {/* Action row — copy + read-aloud + (regenerate on the most
+              recent turn). Visible as soon as the message has stopped
+              streaming, so the user can act the instant the answer
+              settles. */}
           {!streaming && hasBody && (
             <div className="mt-3 flex items-center gap-1">
               <CopyButton text={content} />
+              <SpeakButton messageId={message.id} markdown={content} />
               {isLastAssistant && onRegenerate && (
                 <button
                   type="button"
@@ -250,6 +254,37 @@ function MessageImpl({
         </div>
       </div>
     </motion.div>
+  );
+}
+
+function SpeakButton({ messageId, markdown }: { messageId: string; markdown: string }) {
+  const [supported, setSupported] = useState(false);
+  useEffect(() => {
+    setSupported(isSpeechSupported());
+  }, []);
+  const { isActive, toggle } = useSpeak(messageId);
+  const plain = useMemo(() => markdownToPlain(markdown), [markdown]);
+
+  if (!supported) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => toggle(plain)}
+      aria-label={isActive ? 'Stop playback' : 'Read aloud'}
+      className="inline-flex items-center gap-1.5 rounded-md border border-transparent px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground transition hover:border-rule hover:text-foreground"
+    >
+      {isActive ? (
+        <>
+          <Square className="h-3 w-3" aria-hidden />
+          Stop
+        </>
+      ) : (
+        <>
+          <Volume2 className="h-3 w-3" aria-hidden />
+          Read aloud
+        </>
+      )}
+    </button>
   );
 }
 
