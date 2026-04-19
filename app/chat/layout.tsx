@@ -30,12 +30,15 @@ export default async function ChatLayout({ children }: { children: React.ReactNo
     null;
 
   return (
-    // SidebarProvider's built-in --sidebar-width (16rem = 256px) is
-    // the proven default — matches ChatGPT, Claude, and shadcn's
-    // reference layouts. We previously had a drag-to-resize handle
-    // here but removed it: not worth the implementation surface for
-    // a feature ChatGPT itself doesn't ship.
-    <SidebarProvider defaultOpen={defaultOpen}>
+    // Force the sidebar width to the proven 256px default explicitly.
+    // Setting it inline defends against any residual cookie/localStorage
+    // written by the previous resizer, which would otherwise be
+    // inherited from user-agent state even though the layout no longer
+    // reads it.
+    <SidebarProvider
+      defaultOpen={defaultOpen}
+      style={{ '--sidebar-width': '16rem' } as React.CSSProperties}
+    >
       <Sidebar
         email={user.email ?? 'user'}
         displayName={profile?.display_name ?? user.email ?? 'user'}
