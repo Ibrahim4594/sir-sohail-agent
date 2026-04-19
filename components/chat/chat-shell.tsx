@@ -159,6 +159,7 @@ export function ChatShell({
             updateAssistant((m) => ({
               ...m,
               citations: event.citations,
+              followups: event.followups,
               streaming: false,
             }));
           } else if (event.type === 'error') {
@@ -210,6 +211,19 @@ export function ChatShell({
     abortRef.current?.abort('user');
   }, []);
 
+  // Click handler for the follow-up suggestion chips rendered under the
+  // last assistant message. Forwards the chosen prompt to `send` as if
+  // the user had typed it. No-op while a stream is in flight to avoid
+  // racing two requests.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `send` is stable for the same reason as `regenerate` below
+  const askFollowup = useCallback(
+    (text: string) => {
+      if (streaming) return;
+      send(text);
+    },
+    [streaming],
+  );
+
   // P1.1 — Regenerate the last assistant response. Trim the visible
   // messages down to the last user turn and re-send with the trimmed
   // snapshot passed explicitly so `send` doesn't race React's state
@@ -244,6 +258,7 @@ export function ChatShell({
             avatarUrl={avatarUrl}
             displayName={displayName}
             onRegenerate={regenerate}
+            onAskFollowup={askFollowup}
           />
         )}
       </div>

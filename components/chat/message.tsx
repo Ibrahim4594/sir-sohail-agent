@@ -1,5 +1,5 @@
 'use client';
-import { Check, Copy, RotateCcw } from 'lucide-react';
+import { ArrowUpRight, Check, Copy, RotateCcw } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Children, memo, type ReactNode, useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -17,6 +17,7 @@ function MessageImpl({
   displayName,
   isLastAssistant,
   onRegenerate,
+  onAskFollowup,
 }: {
   message: UIMessage;
   onOpenCitation: (citation: Citation) => void;
@@ -25,8 +26,9 @@ function MessageImpl({
   displayName?: string;
   isLastAssistant?: boolean;
   onRegenerate?: () => void;
+  onAskFollowup?: (text: string) => void;
 }) {
-  const { role, content, streaming, citations, error } = message;
+  const { role, content, streaming, citations, error, followups } = message;
 
   // Wrap string children from react-markdown so inline [N] citation
   // markers stay interactive after markdown formatting kicks in.
@@ -210,6 +212,41 @@ function MessageImpl({
               )}
             </div>
           )}
+
+          {/* Follow-up suggestions — only on the most recent assistant
+              turn, only after streaming settles, and only when the
+              server actually returned suggestions (refusals + greetings
+              come back with an empty list). Clicking a suggestion is
+              the same as the user typing it. */}
+          {!streaming &&
+            hasBody &&
+            isLastAssistant &&
+            onAskFollowup &&
+            followups &&
+            followups.length > 0 && (
+              <div className="mt-6">
+                <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                  Follow up
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  {followups.map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      onClick={() => onAskFollowup(q)}
+                      className="group flex w-full items-center justify-between gap-3 rounded-md border border-rule bg-background px-3 py-2.5 text-left text-[14px] leading-[1.4] text-foreground transition hover:border-foreground hover:bg-muted/60"
+                    >
+                      <span className="min-w-0 flex-1">{q}</span>
+                      <ArrowUpRight
+                        className="size-3.5 shrink-0 text-muted-foreground transition group-hover:text-foreground"
+                        strokeWidth={1.75}
+                        aria-hidden
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
         </div>
       </div>
     </motion.div>

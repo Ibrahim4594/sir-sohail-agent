@@ -10,12 +10,14 @@ export function MessageList({
   avatarUrl,
   displayName,
   onRegenerate,
+  onAskFollowup,
 }: {
   messages: UIMessage[];
   onOpenCitation: (c: Citation) => void;
   avatarUrl?: string | null;
   displayName?: string;
   onRegenerate?: () => void;
+  onAskFollowup?: (text: string) => void;
 }) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -122,6 +124,7 @@ export function MessageList({
                 displayName={displayName}
                 isLastAssistant={isLastAssistant}
                 onRegenerate={onRegenerate}
+                onAskFollowup={isLastAssistant ? onAskFollowup : undefined}
               />
             );
           })}

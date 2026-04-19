@@ -6,6 +6,7 @@ import { verifyCitations } from '@/lib/citation/verify';
 import { env } from '@/lib/env';
 import { getChatModel } from '@/lib/llm/model';
 import { buildPrompt } from '@/lib/prompt/build-prompt';
+import { generateFollowUps } from '@/lib/prompt/followups';
 import { routeIntent } from '@/lib/prompt/intent-router';
 import { STRICT_GROUNDING_SYSTEM_PROMPT } from '@/lib/prompt/system-prompt';
 import { generateConversationTitle } from '@/lib/prompt/title';
@@ -57,7 +58,7 @@ const BodySchema = z.object({
 
 type StreamEvent =
   | { type: 'text'; value: string }
-  | { type: 'meta'; conversationId: string; citations: unknown[] }
+  | { type: 'meta'; conversationId: string; citations: unknown[]; followups: string[] }
   | { type: 'error'; message: string };
 
 function encodeEvent(event: StreamEvent): Uint8Array {
@@ -174,7 +175,9 @@ export async function POST(req: Request) {
     const convStream = new ReadableStream({
       start(controller) {
         controller.enqueue(encodeEvent({ type: 'text', value: intent.reply }));
-        controller.enqueue(encodeEvent({ type: 'meta', conversationId: convId, citations: [] }));
+        controller.enqueue(
+          encodeEvent({ type: 'meta', conversationId: convId, citations: [], followups: [] }),
+        );
         controller.close();
       },
     });
@@ -205,7 +208,9 @@ export async function POST(req: Request) {
     const refusalStream = new ReadableStream({
       start(controller) {
         controller.enqueue(encodeEvent({ type: 'text', value: REFUSAL_MESSAGE }));
-        controller.enqueue(encodeEvent({ type: 'meta', conversationId: convId, citations: [] }));
+        controller.enqueue(
+          encodeEvent({ type: 'meta', conversationId: convId, citations: [], followups: [] }),
+        );
         controller.close();
       },
     });
@@ -260,13 +265,27 @@ export async function POST(req: Request) {
       // as the entailment check, so it's effectively free from a
       // user-perceived latency perspective.
       const initialCitations = verifyCitations(full, rankedChunks);
-      const [citations, newTitle] = await Promise.all([
+      const citedTitles = Array.from(
+        new Set(
+          rankedChunks
+            .map((c) => c.documentTitle ?? c.documentFilename ?? null)
+            .filter((t): t is string => Boolean(t)),
+        ),
+      );
+      const [citations, newTitle, followups] = await Promise.all([
         streamError
           ? Promise.resolve(initialCitations)
           : checkEntailment(full, initialCitations, rankedChunks),
         isFirstExchange && !streamError
           ? generateConversationTitle(lastUser.content, full)
           : Promise.resolve(null),
+        streamError
+          ? Promise.resolve<string[]>([])
+          : generateFollowUps({
+              question: lastUser.content,
+              answer: full,
+              titles: citedTitles,
+            }),
       ]);
       const persistedContent = streamError
         ? `${full}\n\n[The response was cut off: ${streamError}]`
@@ -286,7 +305,9 @@ export async function POST(req: Request) {
         await supabase.from('conversations').update({ title: newTitle }).eq('id', convId);
       }
 
-      controller.enqueue(encodeEvent({ type: 'meta', conversationId: convId, citations }));
+      controller.enqueue(
+        encodeEvent({ type: 'meta', conversationId: convId, citations, followups }),
+      );
       controller.close();
     },
   });

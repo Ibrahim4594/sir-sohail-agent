@@ -14,11 +14,12 @@ export type UIMessage = {
   role: 'user' | 'assistant';
   content: string;
   citations?: Citation[];
+  followups?: string[];
   streaming?: boolean;
   error?: string | null;
 };
 
 export type StreamEvent =
   | { type: 'text'; value: string }
-  | { type: 'meta'; conversationId: string; citations: Citation[] }
+  | { type: 'meta'; conversationId: string; citations: Citation[]; followups: string[] }
   | { type: 'error'; message: string };
