@@ -8,6 +8,7 @@ import { getChatModel } from '@/lib/llm/model';
 import { buildPrompt } from '@/lib/prompt/build-prompt';
 import { routeIntent } from '@/lib/prompt/intent-router';
 import { STRICT_GROUNDING_SYSTEM_PROMPT } from '@/lib/prompt/system-prompt';
+import { generateConversationTitle } from '@/lib/prompt/title';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { rerankChunks } from '@/lib/retrieval/rerank';
 import { searchChunks } from '@/lib/retrieval/search';
@@ -112,6 +113,11 @@ export async function POST(req: Request) {
 
   // Get or create the conversation (RLS restricts to this user's own rows).
   let conversationId = parsed.data.conversationId;
+  // Flag whether we're creating the conversation in this request —
+  // used below to trigger a one-shot LLM title generation after the
+  // first exchange. Subsequent turns leave the title alone (so the
+  // user can rename without being stomped).
+  const isFirstExchange = !conversationId;
   if (!conversationId) {
     const { data: conv, error: convErr } = await supabase
       .from('conversations')
@@ -248,10 +254,20 @@ export async function POST(req: Request) {
       // actually support the claim? Closes the "illusion of groundedness"
       // gap where an LLM cites [3] but the claim has drifted from what
       // chunk 3 says. Marker-is-real → valid until entailment flips it.
+      //
+      // We also run conversation title generation in parallel for the
+      // first exchange — same LLM, same network, same ~1s round-trip
+      // as the entailment check, so it's effectively free from a
+      // user-perceived latency perspective.
       const initialCitations = verifyCitations(full, rankedChunks);
-      const citations = streamError
-        ? initialCitations
-        : await checkEntailment(full, initialCitations, rankedChunks);
+      const [citations, newTitle] = await Promise.all([
+        streamError
+          ? Promise.resolve(initialCitations)
+          : checkEntailment(full, initialCitations, rankedChunks),
+        isFirstExchange && !streamError
+          ? generateConversationTitle(lastUser.content, full)
+          : Promise.resolve(null),
+      ]);
       const persistedContent = streamError
         ? `${full}\n\n[The response was cut off: ${streamError}]`
         : full;
@@ -262,6 +278,13 @@ export async function POST(req: Request) {
         content: persistedContent,
         citations: citations as unknown as Json,
       });
+
+      // Replace the default "first 60 chars of user question" title
+      // with the LLM-generated topic title. Falls through silently on
+      // failure; the existing slice-based title stays in place.
+      if (newTitle) {
+        await supabase.from('conversations').update({ title: newTitle }).eq('id', convId);
+      }
 
       controller.enqueue(encodeEvent({ type: 'meta', conversationId: convId, citations }));
       controller.close();
