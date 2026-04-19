@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { CorpusList } from '@/components/overview/corpus-list';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export const metadata = { title: 'Library — Ibid' };
+export const metadata = { title: 'Library — Sir Sohail Agent' };
 
 export default async function OverviewPage() {
   const supabase = await createServerSupabase();
@@ -43,9 +43,10 @@ export default async function OverviewPage() {
           </h1>
 
           <p className="mt-8 max-w-[58ch] text-[15px] leading-[1.6] text-foreground">
-            Every answer Ibid gives is grounded in one of the papers below. Nothing else. If a
-            question isn&rsquo;t covered here, Ibid will refuse rather than guess. The catalogue is
-            intentionally bounded — curated by Prof. Sohail and frozen until he adds to it.
+            Every answer Sir Sohail Agent gives is grounded in one of the papers below. Nothing
+            else. If a question isn&rsquo;t covered here, Sir Sohail Agent will refuse rather than
+            guess. The catalogue is intentionally bounded — curated by Prof. Sohail and frozen until
+            he adds to it.
           </p>
 
           {list.length > 0 && (

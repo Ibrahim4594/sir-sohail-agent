@@ -10,9 +10,7 @@ create table public.documents (
   status text not null default 'ready' check (status in ('processing', 'ready', 'failed')),
   error_message text
 );
-
 create index documents_uploaded_by_idx on public.documents(uploaded_by);
-
 create table public.chunks (
   id uuid primary key default gen_random_uuid(),
   document_id uuid not null references public.documents(id) on delete cascade,
@@ -23,11 +21,9 @@ create table public.chunks (
   token_count int,
   created_at timestamptz not null default now()
 );
-
 create index chunks_document_id_idx on public.chunks(document_id);
 create index chunks_embedding_idx
   on public.chunks using ivfflat (embedding vector_cosine_ops) with (lists = 100);
-
 -- RPC: vector similarity search
 create or replace function public.search_chunks(
   query_embedding vector(768),

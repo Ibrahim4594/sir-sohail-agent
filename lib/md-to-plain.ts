@@ -3,14 +3,14 @@
  * naturally through text-to-speech. Not a full parser — just enough
  * to avoid the voice pronouncing "asterisk asterisk" around bold
  * words or "hash hash" at the start of headings. Also strips the
- * inline citation markers [1], [2], ... that Ibid injects; those
+ * inline citation markers [1], [2], ... that Sir Sohail Agent injects; those
  * would otherwise be read as "open bracket one close bracket."
  */
 export function markdownToPlain(md: string): string {
   return md
     .replace(/```[\s\S]*?```/g, ' ') // fenced code blocks
     .replace(/`([^`]+)`/g, '$1') // inline code
-    .replace(/\[\d+\]/g, '') // Ibid citation markers
+    .replace(/\[\d+\]/g, '') // Sir Sohail Agent citation markers
     .replace(/\*\*([^*]+)\*\*/g, '$1') // bold
     .replace(/\*([^*]+)\*/g, '$1') // italic
     .replace(/_([^_]+)_/g, '$1') // italic alt

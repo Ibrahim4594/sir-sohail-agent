@@ -13,7 +13,7 @@ import { getChatModel } from '@/lib/llm/model';
  * a transient LLM error doesn't block the chat.
  */
 
-const TITLE_SYSTEM_PROMPT = `You generate short conversation titles for Ibid, a research assistant that answers from a closed library of peer-reviewed papers on innovation education and entrepreneurship pedagogy.
+const TITLE_SYSTEM_PROMPT = `You generate short conversation titles for Sir Sohail Agent, a research assistant that answers from a closed library of peer-reviewed papers on innovation education and entrepreneurship pedagogy.
 
 Given one user message and the assistant's first reply, output a concise TITLE of 3 to 6 words that captures the topic.
 

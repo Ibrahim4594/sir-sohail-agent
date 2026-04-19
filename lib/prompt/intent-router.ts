@@ -39,7 +39,7 @@ const CANNED_REPLIES: Record<ConvIntent, string> = {
   greeting: 'Hey — good to see you. Want to pull something from the corpus today?',
   thanks: "Anytime. Tell me what you'd like to dig into next.",
   farewell: 'Take care. Your chat history is saved — come back whenever.',
-  meta: "I'm Ibid — a research assistant for Prof. Sohail's closed library of peer-reviewed papers on innovation education and entrepreneurship pedagogy. Every answer comes with page-level citations from the library. Ask me about something in it.",
+  meta: "I'm Sir Sohail Agent — a research assistant for Prof. Sohail's closed library of peer-reviewed papers on innovation education and entrepreneurship pedagogy. Every answer comes with page-level citations from the library. Ask me about something in it.",
   emotional:
     "Sorry to hear that. I'm here if a paper would be a quiet distraction — otherwise take care of yourself first.",
   other:
@@ -66,7 +66,7 @@ const TAG_TO_INTENT: Record<string, 'research' | ConvIntent> = {
   [TAGS.other]: 'other',
 };
 
-const INTENT_SYSTEM_PROMPT = `You are the front-door classifier for Ibid, a research assistant strictly grounded in Prof. Sohail's closed corpus of peer-reviewed academic papers on innovation education and entrepreneurship pedagogy at Eastern Michigan University.
+const INTENT_SYSTEM_PROMPT = `You are the front-door classifier for Sir Sohail Agent, a research assistant strictly grounded in Prof. Sohail's closed corpus of peer-reviewed academic papers on innovation education and entrepreneurship pedagogy at Eastern Michigan University.
 
 Your job: read the user's latest message and decide which category it falls into. Output EXACTLY ONE of these tokens and NOTHING else — no prose, no punctuation around it, no explanation:
 

@@ -33,7 +33,14 @@ export function SourcesPanel({
           </button>
         )}
       </div>
-      <ul className="divide-y divide-rule border-y border-rule">
+      <ul
+        className={cn(
+          'divide-y divide-rule border-y border-rule',
+          // When every citation is shown and the list is long, cap
+          // height so 10+ sources don't push the composer offscreen.
+          expanded && valid.length > 5 && 'max-h-[420px] overflow-y-auto',
+        )}
+      >
         {visible.map((c) => (
           <li key={`${c.marker}-${c.chunkId}`}>
             <button

@@ -94,14 +94,14 @@ export default async function SettingsPage() {
           </Section>
 
           {/* Sign out */}
-          <Section title="Sign out of Ibid">
+          <Section title="Sign out of Sir Sohail Agent">
             <div className="pt-2">
               <SignOutButton />
             </div>
           </Section>
         </div>
 
-        <p className="label mt-16 text-muted-foreground/70">Ibid · Sir Sohail · EMU</p>
+        <p className="label mt-16 text-muted-foreground/70">Sir Sohail Agent · EMU</p>
       </main>
     </div>
   );

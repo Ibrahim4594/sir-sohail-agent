@@ -1,0 +1,191 @@
+{
+  "version": 1,
+  "description": "Golden eval set — question/behaviour pairs the agent should handle correctly. Run via tests/integration/rag-eval.test.ts (gated behind RAG_LIVE_TESTS=1). Use it to measure every retrieval, reranker, or prompt change.",
+  "cases": [
+    {
+      "id": "pbl-001",
+      "kind": "grounded",
+      "question": "What is project-based learning according to the corpus?",
+      "expectAnyTitleMatches": ["project-based", "PBL"]
+    },
+    {
+      "id": "pbl-002",
+      "kind": "grounded",
+      "question": "How is design thinking combined with project-based learning in higher education?",
+      "expectAnyTitleMatches": ["design thinking"]
+    },
+    {
+      "id": "pbl-003",
+      "kind": "grounded",
+      "question": "Does the literature discuss project-based learning in the social sciences?",
+      "expectAnyTitleMatches": ["project-based", "social"]
+    },
+    {
+      "id": "innov-001",
+      "kind": "grounded",
+      "question": "What papers cover innovation and entrepreneurship education for medical students?",
+      "expectAnyTitleMatches": ["medical"]
+    },
+    {
+      "id": "innov-002",
+      "kind": "grounded",
+      "question": "Summarize findings on long-term outcomes of entrepreneurship education.",
+      "expectAnyTitleMatches": ["entrepreneurship", "long-term"]
+    },
+    {
+      "id": "innov-003",
+      "kind": "grounded",
+      "question": "What does the corpus say about resilience in entrepreneurship education?",
+      "expectAnyTitleMatches": ["resilience"]
+    },
+    {
+      "id": "innov-004",
+      "kind": "grounded",
+      "question": "How is disruptive innovation treated in higher education research?",
+      "expectAnyTitleMatches": ["disruptive", "transformative", "trends"]
+    },
+    {
+      "id": "innov-005",
+      "kind": "grounded",
+      "question": "Discuss innovation education in nursing postgraduate programs.",
+      "expectAnyTitleMatches": ["nursing"]
+    },
+    {
+      "id": "innov-006",
+      "kind": "grounded",
+      "question": "What does the CERN IdeaSquare case study tell us about future educational needs?",
+      "expectAnyTitleMatches": ["CERN", "futures"]
+    },
+    {
+      "id": "innov-007",
+      "kind": "grounded",
+      "question": "How do responsible digital design and innovation education intersect in youth AI work?",
+      "expectAnyTitleMatches": ["youth", "digital"]
+    },
+    {
+      "id": "innov-008",
+      "kind": "grounded",
+      "question": "What evaluation index systems exist for innovation education?",
+      "expectAnyTitleMatches": ["evaluation", "index"]
+    },
+    {
+      "id": "innov-009",
+      "kind": "grounded",
+      "question": "What engagement scale has been proposed for college science and technology innovation competitions?",
+      "expectAnyTitleMatches": ["engagement", "competition"]
+    },
+    {
+      "id": "innov-010",
+      "kind": "grounded",
+      "question": "What bibliometric findings are reported about innovation and entrepreneurship education between 2000 and 2024?",
+      "expectAnyTitleMatches": ["bibliometric", "2000", "2024"]
+    },
+    {
+      "id": "innov-011",
+      "kind": "grounded",
+      "question": "How does the corpus address social innovation through place-based learning?",
+      "expectAnyTitleMatches": ["social innovation", "place-based"]
+    },
+    {
+      "id": "innov-012",
+      "kind": "grounded",
+      "question": "What does the corpus say about integrating PBL and its effects on learning outcomes?",
+      "expectAnyTitleMatches": ["PBL", "project-based"]
+    },
+    {
+      "id": "innov-013",
+      "kind": "grounded",
+      "question": "How is generative artificial intelligence discussed in relation to innovation education?",
+      "expectAnyTitleMatches": ["generative", "artificial"]
+    },
+    {
+      "id": "innov-014",
+      "kind": "grounded",
+      "question": "What does the corpus say about Eastern philosophy and craft in education?",
+      "expectAnyTitleMatches": ["eastern philosophy", "craft"]
+    },
+    {
+      "id": "innov-015",
+      "kind": "grounded",
+      "question": "How is creativity optimization modelled with particle swarm approaches in entrepreneurship education?",
+      "expectAnyTitleMatches": ["eco-environmental", "PSO", "creativity"]
+    },
+    {
+      "id": "innov-016",
+      "kind": "grounded",
+      "question": "What multi-attribute decision-making methods appear in innovation-education research?",
+      "expectAnyTitleMatches": ["multi-attribute", "decision"]
+    },
+    {
+      "id": "innov-017",
+      "kind": "grounded",
+      "question": "What conversations does the corpus start about how we teach and train innovation practitioners?",
+      "expectAnyTitleMatches": ["innovation education", "practitioners"]
+    },
+    {
+      "id": "refuse-001",
+      "kind": "refusal",
+      "question": "Explain the mathematical foundations of quantum entanglement."
+    },
+    {
+      "id": "refuse-002",
+      "kind": "refusal",
+      "question": "What is the capital of France?"
+    },
+    {
+      "id": "refuse-003",
+      "kind": "refusal",
+      "question": "Write me a Python function that computes the Fibonacci sequence."
+    },
+    {
+      "id": "refuse-004",
+      "kind": "refusal",
+      "question": "Who won the 2024 NBA championship?"
+    },
+    {
+      "id": "refuse-005",
+      "kind": "refusal",
+      "question": "How do I bake a sourdough bread at home?"
+    },
+    {
+      "id": "refuse-006",
+      "kind": "refusal",
+      "question": "Explain the transformer architecture used in large language models."
+    },
+    {
+      "id": "refuse-007",
+      "kind": "refusal",
+      "question": "Translate 'good morning' into Japanese."
+    },
+    {
+      "id": "refuse-008",
+      "kind": "refusal",
+      "question": "What are Newton's three laws of motion?"
+    },
+    {
+      "id": "chat-001",
+      "kind": "conversational",
+      "question": "hey"
+    },
+    {
+      "id": "chat-002",
+      "kind": "conversational",
+      "question": "how was your day?"
+    },
+    {
+      "id": "chat-003",
+      "kind": "conversational",
+      "question": "who are you"
+    },
+    {
+      "id": "chat-004",
+      "kind": "conversational",
+      "question": "thanks!"
+    },
+    {
+      "id": "chat-005",
+      "kind": "conversational",
+      "question": "my day was bad"
+    }
+  ]
+}

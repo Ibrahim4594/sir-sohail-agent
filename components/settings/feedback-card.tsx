@@ -12,7 +12,7 @@ export function FeedbackCard() {
     <div className="py-2">
       <FeedbackWidget
         className="!p-0"
-        label="Was Ibid helpful?"
+        label="Was Sir Sohail Agent helpful?"
         placeholder="What worked, what didn't, and what's missing? Prof. Sohail reads every note."
         onSubmit={async ({ rating, feedback }) => {
           // Dev-only logging until a persistence endpoint exists. The

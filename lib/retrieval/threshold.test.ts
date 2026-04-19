@@ -13,8 +13,14 @@ const r = (similarity: number): SearchResult => ({
 });
 
 describe('applyThreshold', () => {
-  it('returns all results if best score clears threshold', () => {
+  it('drops chunks below threshold even when top-1 clears it', () => {
     const out = applyThreshold([r(0.8), r(0.7), r(0.2)], 0.4);
+    expect(out.grounded).toBe(true);
+    expect(out.results.map((x) => x.similarity)).toEqual([0.8, 0.7]);
+  });
+
+  it('returns every chunk when every chunk clears the threshold', () => {
+    const out = applyThreshold([r(0.9), r(0.6), r(0.5)], 0.4);
     expect(out.grounded).toBe(true);
     expect(out.results).toHaveLength(3);
   });
@@ -23,6 +29,13 @@ describe('applyThreshold', () => {
     const out = applyThreshold([r(0.3), r(0.2)], 0.4);
     expect(out.grounded).toBe(false);
     expect(out.results).toEqual([]);
+  });
+
+  it('treats chunks exactly at the threshold as passing', () => {
+    const out = applyThreshold([r(0.4), r(0.39)], 0.4);
+    expect(out.grounded).toBe(true);
+    expect(out.results).toHaveLength(1);
+    expect(out.results[0].similarity).toBe(0.4);
   });
 
   it('handles empty input', () => {

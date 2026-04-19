@@ -155,10 +155,10 @@ export function LiveTrace() {
         </p>
       </div>
 
-      {/* Assistant row — Ibid mark + streaming body. The wrapper has a
+      {/* Assistant row — Sir Sohail Agent mark + streaming body. The wrapper has a
           min-height so the layout doesn't jump when the answer appears. */}
       <div className="flex gap-3">
-        <div className="shrink-0 pt-[3px]" role="img" aria-label="Ibid">
+        <div className="shrink-0 pt-[3px]" role="img" aria-label="Sir Sohail Agent">
           <BrandMark className="h-5 w-5 text-foreground" />
         </div>
         <div className="min-h-[3.5em] min-w-0 flex-1 text-[15px] leading-[1.65] text-foreground/85">

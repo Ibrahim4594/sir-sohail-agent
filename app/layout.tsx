@@ -22,12 +22,12 @@ const hanken = Hanken_Grotesk({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Ibid — cited, not guessed.',
-    template: '%s — Ibid',
+    default: 'Sir Sohail Agent — cited, not guessed.',
+    template: '%s — Sir Sohail Agent',
   },
   description:
-    'Ibid is a research assistant bound to a closed corpus of peer-reviewed papers. Every claim is footnoted; every footnote opens the exact page of the source. A Sir Sohail project at Eastern Michigan University.',
-  applicationName: 'Ibid',
+    'Sir Sohail Agent is a research assistant bound to a closed corpus of peer-reviewed papers. Every claim is footnoted; every footnote opens the exact page of the source. A Sir Sohail project at Eastern Michigan University.',
+  applicationName: 'Sir Sohail Agent',
   authors: [{ name: 'Eastern Michigan University' }],
   robots: { index: false, follow: false },
 };

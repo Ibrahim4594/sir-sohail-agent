@@ -24,7 +24,7 @@ const STEPS: { n: string; heading: string; body: string }[] = [
   {
     n: '02',
     heading: 'Get a cited answer',
-    body: 'Ibid retrieves from the 40-paper corpus, grounds every claim in a passage, and streams the answer with footnote markers — nothing invented.',
+    body: 'Sir Sohail Agent retrieves from the 40-paper corpus, grounds every claim in a passage, and streams the answer with footnote markers — nothing invented.',
   },
   {
     n: '03',

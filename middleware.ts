@@ -1,7 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
-const publicPaths = ['/', '/sign-in', '/auth/callback'];
+// Paths reachable without an authenticated session. `/pdf.worker.min.mjs`
+// is the pdfjs worker served from public/ — the middleware matcher
+// already excludes _next/static and common image types but not .mjs, so
+// we whitelist it here to keep PDFs rendering even on public pages.
+const publicPaths = ['/', '/sign-in', '/auth/callback', '/pdf.worker.min.mjs'];
 
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request);

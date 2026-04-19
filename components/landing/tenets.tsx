@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * Tenets — stagger-stack of Ibid's commitments.
+ * Tenets — stagger-stack of Sir Sohail Agent's commitments.
  *
  * Visual pattern inspired by the stagger-testimonials shape (octagonal
  * cards, center-plus-fanned positions, rotation). Content is entirely
@@ -65,7 +65,7 @@ const TENETS: Tenet[] = [
   {
     id: 'adjacent',
     claim:
-      'When the corpus can\u2019t answer, Ibid says so in plain language and offers adjacent topics it does cover.',
+      'When the corpus can\u2019t answer, Sir Sohail Agent says so in plain language and offers adjacent topics it does cover.',
     anchor: 'lib/prompt/system-prompt.ts',
   },
   {
@@ -129,8 +129,8 @@ export function Tenets() {
             Enforced in code.
           </h2>
           <p className="mx-auto mt-5 max-w-[46ch] text-[15px] leading-[1.6] text-foreground/70">
-            These are the behaviours Ibid guarantees — not marketing. Each card points to the exact
-            file where the rule lives.
+            These are the behaviours Sir Sohail Agent guarantees — not marketing. Each card points
+            to the exact file where the rule lives.
           </p>
         </header>
 

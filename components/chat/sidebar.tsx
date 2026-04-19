@@ -47,12 +47,12 @@ export async function Sidebar({
       <header className="flex h-14 shrink-0 items-center border-b border-rule px-4">
         <Link
           href="/"
-          aria-label="Ibid — home"
+          aria-label="Sir Sohail Agent — home"
           className="flex items-center gap-2.5 transition hover:opacity-80"
         >
           <BrandMark className="h-6 w-6 shrink-0 text-foreground" />
           <span className="font-display text-[15px] font-[600] italic leading-none tracking-[-0.015em] text-foreground">
-            Ibid.
+            Sir Sohail Agent
           </span>
         </Link>
       </header>

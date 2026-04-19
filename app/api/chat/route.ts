@@ -70,7 +70,7 @@ function encodeEvent(event: StreamEvent): Uint8Array {
 // which implied the corpus covered the asked-about topic (it did not).
 // That falsely advertised the corpus and is now removed.
 const REFUSAL_MESSAGE =
-  "I'm Ibid — I only answer from the closed library of papers Prof. Sohail has loaded (innovation education, entrepreneurship pedagogy, project-based learning). This question isn't covered, so I'll decline rather than guess. Try rephrasing, or ask about a topic the library covers.";
+  "I'm Sir Sohail Agent — I only answer from the closed library of papers Prof. Sohail has loaded (innovation education, entrepreneurship pedagogy, project-based learning). This question isn't covered, so I'll decline rather than guess. Try rephrasing, or ask about a topic the library covers.";
 
 export async function POST(req: Request) {
   const parsed = BodySchema.safeParse(await req.json().catch(() => null));
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          'Too many requests — please wait a moment and try again. Ibid is rate-limited to protect the shared corpus.',
+          'Too many requests — please wait a moment and try again. Sir Sohail Agent is rate-limited to protect the shared corpus.',
       },
       {
         status: 429,

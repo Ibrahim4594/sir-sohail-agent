@@ -92,7 +92,7 @@ function MessageImpl({
       style={contentVisibilityStyle}
     >
       <div className="flex gap-4">
-        <div className="shrink-0 pt-1" role="img" aria-label="Ibid">
+        <div className="shrink-0 pt-1" role="img" aria-label="Sir Sohail Agent">
           <BrandMark className="h-6 w-6 text-foreground" />
         </div>
 

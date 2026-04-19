@@ -5,9 +5,7 @@ create table public.conversations (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
 create index conversations_user_id_idx on public.conversations(user_id);
-
 create table public.messages (
   id uuid primary key default gen_random_uuid(),
   conversation_id uuid not null references public.conversations(id) on delete cascade,
@@ -16,9 +14,7 @@ create table public.messages (
   citations jsonb,
   created_at timestamptz not null default now()
 );
-
 create index messages_conversation_id_idx on public.messages(conversation_id);
-
 create or replace function public.touch_conversation()
 returns trigger
 language plpgsql
@@ -28,7 +24,6 @@ begin
   return new;
 end;
 $$;
-
 create trigger touch_conversation_on_message
   after insert on public.messages
   for each row execute function public.touch_conversation();

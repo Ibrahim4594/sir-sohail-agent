@@ -45,7 +45,7 @@ export default async function Home() {
         <div className="flex items-center gap-2.5">
           <BrandMark className="h-6 w-6 text-foreground" />
           <span className="font-display text-[15px] font-[600] italic leading-none tracking-[-0.015em] text-foreground">
-            Ibid.
+            Sir Sohail Agent
           </span>
         </div>
         <Link
@@ -88,7 +88,7 @@ export default async function Home() {
               className="mt-8 max-w-[56ch] text-[17px] leading-[1.58] text-foreground/85"
               style={{ animation: 'rise 900ms 260ms both' }}
             >
-              Ibid is a research assistant bound to a closed library of{' '}
+              Sir Sohail Agent is a research assistant bound to a closed library of{' '}
               <span className="tabular font-[500] text-foreground">{paperCount}</span> peer-reviewed
               papers on innovation education, entrepreneurship pedagogy, and project-based learning.
               Every claim carries a footnote. Every footnote opens the exact page of its source.
@@ -137,7 +137,7 @@ export default async function Home() {
           funders and new visitors who scroll get the full story. */}
       <HowItWorks />
 
-      {/* Tenets — stagger stack of Ibid's behavioural commitments, each
+      {/* Tenets — stagger stack of Sir Sohail Agent's behavioural commitments, each
           card pointing to the exact file where the rule is enforced.
           Brand thesis expressed as UI: "we say it, we code it, you can
           verify." */}

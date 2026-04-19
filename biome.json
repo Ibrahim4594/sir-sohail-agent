@@ -15,7 +15,9 @@
       "!test-results",
       "!playwright-report",
       "!.agents",
-      "!.tools"
+      "!.tools",
+      "!.firecrawl",
+      "!public"
     ]
   },
   "formatter": {
