@@ -154,10 +154,17 @@ export function ConversationRow({
             >
               {conversation.title ?? 'Untitled'}
             </span>
+            {/* Time badge yields the slot to the three-dot menu on
+                hover / focus / open. Same fade window so the swap
+                reads as a single transition, not two elements
+                stacking. The three-dot menu trigger below occupies
+                the same right-edge coordinates. */}
             <span
+              aria-hidden
               className={cn(
-                'shrink-0 font-mono text-[10px] tabular-nums tracking-[0.04em]',
+                'shrink-0 font-mono text-[10px] tabular-nums tracking-[0.04em] transition-opacity',
                 active ? 'text-foreground' : 'text-muted-foreground/80',
+                'group-hover/menu-item:opacity-0 group-focus-within/menu-item:opacity-0',
               )}
             >
               {formatRelative(conversation.updated_at)}
