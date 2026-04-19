@@ -1,4 +1,4 @@
-import { BookOpenText, PenSquare, Search, ShieldCheck } from 'lucide-react';
+import { BookOpenText, PenSquare, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { BrandMark } from '@/components/brand/mark';
 import {
@@ -89,18 +89,6 @@ export async function Sidebar({
                     <PenSquare className="size-[18px]" strokeWidth={1.75} aria-hidden />
                     <span>New chat</span>
                   </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  tooltip="Search chats (coming soon)"
-                  size="default"
-                  disabled
-                  className="cursor-not-allowed opacity-60"
-                  aria-disabled="true"
-                >
-                  <Search className="size-[18px]" strokeWidth={1.75} aria-hidden />
-                  <span>Search chats</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
