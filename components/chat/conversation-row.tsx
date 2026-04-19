@@ -15,21 +15,6 @@ import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import type { SidebarConversation } from './sidebar';
 
-function formatRelative(iso: string): string {
-  const now = Date.now();
-  const then = new Date(iso).getTime();
-  const s = Math.max(0, Math.round((now - then) / 1000));
-  if (s < 60) return 'now';
-  const m = Math.round(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `${h}h`;
-  const d = Math.round(h / 24);
-  if (d < 7) return `${d}d`;
-  const w = Math.round(d / 7);
-  return `${w}w`;
-}
-
 export function ConversationRow({
   conversation,
   active,
@@ -172,29 +157,18 @@ export function ConversationRow({
             {conversation.pinned_at && (
               <Pin className="size-3 shrink-0 text-muted-foreground" strokeWidth={2} aria-hidden />
             )}
+            {/* ChatGPT-style row: title only. Three-dot menu replaces
+                the trailing area on hover. Padding-right reserves
+                room for the menu trigger so the title doesn't collide
+                with it mid-hover. */}
             <span
               className={cn(
-                'min-w-0 flex-1 truncate leading-[1.3]',
+                'min-w-0 flex-1 truncate pr-5 leading-[1.3]',
                 active ? 'font-[500]' : 'font-[400]',
               )}
               title={conversation.title ?? 'Untitled'}
             >
               {conversation.title ?? 'Untitled'}
-            </span>
-            {/* Time badge yields the slot to the three-dot menu on
-                hover / focus / open. Same fade window so the swap
-                reads as a single transition, not two elements
-                stacking. The three-dot menu trigger below occupies
-                the same right-edge coordinates. */}
-            <span
-              aria-hidden
-              className={cn(
-                'shrink-0 font-mono text-[10px] tabular-nums tracking-[0.04em] transition-opacity',
-                active ? 'text-foreground' : 'text-muted-foreground/80',
-                'group-hover/menu-item:opacity-0 group-focus-within/menu-item:opacity-0',
-              )}
-            >
-              {formatRelative(conversation.updated_at)}
             </span>
           </Link>
         </SidebarMenuButton>
