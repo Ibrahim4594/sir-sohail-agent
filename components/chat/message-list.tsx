@@ -9,11 +9,13 @@ export function MessageList({
   onOpenCitation,
   avatarUrl,
   displayName,
+  onRegenerate,
 }: {
   messages: UIMessage[];
   onOpenCitation: (c: Citation) => void;
   avatarUrl?: string | null;
   displayName?: string;
+  onRegenerate?: () => void;
 }) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -64,10 +66,23 @@ export function MessageList({
   // Stream chunks: only scroll when sticky. behavior: 'auto' (instant)
   // prevents multiple smooth-scroll animations queuing up and canceling
   // each other during a fast streaming burst.
+  //
+  // RAF-coalesce: even after the chat-shell token-buffer throttles
+  // content updates to ~20/sec, re-renders can still back up during
+  // a burst. We schedule at most one scrollIntoView per frame so the
+  // main thread isn't kept busy thrashing layout. Pattern: ChatGPT
+  // and Claude both coalesce follow-scroll this way.
+  const scrollScheduledRef = useRef(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: fire on every content/sticky change
   useEffect(() => {
     if (!sticky) return;
-    bottomRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+    if (scrollScheduledRef.current) return;
+    scrollScheduledRef.current = true;
+    const raf = window.requestAnimationFrame(() => {
+      scrollScheduledRef.current = false;
+      bottomRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+    });
+    return () => window.cancelAnimationFrame(raf);
   }, [lastContent, sticky]);
 
   const jumpToLatest = useCallback(() => {
@@ -80,20 +95,39 @@ export function MessageList({
       <div
         ref={containerRef}
         className="h-full overflow-y-auto"
-        style={{ scrollbarGutter: 'stable' }}
+        // scrollbarGutter: prevents the thumb from taking/giving width
+        // on overflow changes, which otherwise causes horizontal jitter
+        // during streaming.
+        // overflowAnchor: default-'auto' enables Chrome's native scroll
+        // anchoring — when content above the viewport grows, the
+        // browser preserves the user's visual position. Pairs with
+        // the non-anchoring sentinel below so our follow-scroll
+        // still works.
+        style={{ scrollbarGutter: 'stable', overflowAnchor: 'auto' }}
       >
         <div className="pb-48 pt-6">
-          {messages.map((m, i) => (
-            <Message
-              key={m.id}
-              message={m}
-              onOpenCitation={onOpenCitation}
-              isFirst={i === 0 || messages[i - 1]?.role !== 'assistant'}
-              avatarUrl={avatarUrl}
-              displayName={displayName}
-            />
-          ))}
-          <div ref={bottomRef} />
+          {messages.map((m, i) => {
+            // The Regenerate action only applies to the most recent
+            // assistant turn — and only once it's settled, not mid-
+            // stream. The Message component double-checks the
+            // streaming flag before rendering the button.
+            const isLastAssistant = m.role === 'assistant' && i === messages.length - 1;
+            return (
+              <Message
+                key={m.id}
+                message={m}
+                onOpenCitation={onOpenCitation}
+                isFirst={i === 0 || messages[i - 1]?.role !== 'assistant'}
+                avatarUrl={avatarUrl}
+                displayName={displayName}
+                isLastAssistant={isLastAssistant}
+                onRegenerate={onRegenerate}
+              />
+            );
+          })}
+          {/* Sentinel is not an anchor candidate — keeps follow-scroll
+              crisp even with overflowAnchor enabled above. */}
+          <div ref={bottomRef} style={{ overflowAnchor: 'none' }} />
         </div>
       </div>
 

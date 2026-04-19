@@ -1,6 +1,8 @@
 'use client';
+import { Check, Copy, RotateCcw } from 'lucide-react';
 import { motion } from 'motion/react';
-import { memo, useMemo } from 'react';
+import { Children, memo, type ReactNode, useCallback, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { BrandMark } from '@/components/brand/mark';
 import { cn } from '@/lib/utils';
 import { renderInlineCitations } from './citation-ref';
@@ -8,31 +10,48 @@ import { SourcesPanel } from './sources-panel';
 import type { Citation, UIMessage } from './types';
 import { UserAvatar } from './user-avatar';
 
-function splitParagraphs(text: string): string[] {
-  return text
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-}
-
 function MessageImpl({
   message,
   onOpenCitation,
   avatarUrl,
   displayName,
+  isLastAssistant,
+  onRegenerate,
 }: {
   message: UIMessage;
   onOpenCitation: (citation: Citation) => void;
   isFirst: boolean;
   avatarUrl?: string | null;
   displayName?: string;
+  isLastAssistant?: boolean;
+  onRegenerate?: () => void;
 }) {
   const { role, content, streaming, citations, error } = message;
 
-  // Split paragraphs once per content change; cheap but runs on every
-  // streaming delta for the currently-streaming message — memo means
-  // settled messages skip it entirely on re-render.
-  const paragraphs = useMemo(() => splitParagraphs(content || ''), [content]);
+  // Wrap string children from react-markdown so inline [N] citation
+  // markers stay interactive after markdown formatting kicks in.
+  // Applied inside paragraph/list/heading renderers below.
+  const wrapCitations = useCallback(
+    (nodes: ReactNode): ReactNode => {
+      if (!citations || citations.length === 0) return nodes;
+      return Children.map(nodes, (child) => {
+        if (typeof child === 'string') {
+          return renderInlineCitations(child, citations, onOpenCitation);
+        }
+        return child;
+      });
+    },
+    [citations, onOpenCitation],
+  );
+
+  // content-visibility: auto lets off-screen assistant messages skip
+  // paint entirely, which scales well for long conversations. Disabled
+  // for the currently-streaming message (content-visibility can flash
+  // on incremental updates) and for user messages (cheap anyway).
+  const contentVisibilityStyle =
+    role === 'assistant' && !streaming
+      ? { contentVisibility: 'auto' as const, containIntrinsicSize: '0 600px' }
+      : undefined;
 
   if (role === 'user') {
     return (
@@ -58,12 +77,15 @@ function MessageImpl({
     );
   }
 
+  const hasBody = content.trim() !== '';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
       className="mx-auto w-full max-w-3xl px-6 py-5 sm:px-8"
+      style={contentVisibilityStyle}
     >
       <div className="flex gap-4">
         <div className="shrink-0 pt-1" role="img" aria-label="Ibid">
@@ -71,48 +93,89 @@ function MessageImpl({
         </div>
 
         <div className="min-w-0 flex-1">
-          <article className={cn('space-y-5 text-[16px] leading-[1.72] text-foreground')}>
-            {paragraphs.length === 0 ? (
+          <article
+            aria-live={streaming ? 'polite' : undefined}
+            aria-atomic="false"
+            className="prose-ibid space-y-4 text-[16px] leading-[1.72] text-foreground"
+          >
+            {!hasBody ? (
               <p className="text-muted-foreground">
                 <span className="caret" />
               </p>
             ) : (
-              paragraphs.map((p, i) => {
-                const isLast = i === paragraphs.length - 1;
-                const lines = p.split('\n');
-                const isList = lines.every((l) => /^[-•]\s+/.test(l));
-                const pKey = `${i}:${p.slice(0, 32)}`;
-                if (isList) {
-                  return (
-                    <ul key={pKey} className="space-y-2 pl-6">
-                      {lines.map((l, j) => (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: streamed bullet — positional key is correct
-                        <li key={`${pKey}:bullet:${j}`} className="relative">
-                          <span
-                            aria-hidden
-                            className="absolute -left-5 top-[0.7em] h-px w-3 bg-foreground"
-                          />
-                          {renderInlineCitations(
-                            l.replace(/^[-•]\s+/, ''),
-                            citations,
-                            onOpenCitation,
-                          )}
-                          {streaming && isLast && j === lines.length - 1 && (
-                            <span className="caret" />
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  );
-                }
-                return (
-                  <p key={pKey}>
-                    {renderInlineCitations(p, citations, onOpenCitation)}
-                    {streaming && isLast && <span className="caret" />}
-                  </p>
-                );
-              })
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => <p>{wrapCitations(children)}</p>,
+                  ul: ({ children }) => <ul className="space-y-2 pl-5">{children}</ul>,
+                  ol: ({ children }) => (
+                    <ol className="list-decimal space-y-2 pl-6 marker:text-muted-foreground">
+                      {children}
+                    </ol>
+                  ),
+                  li: ({ children }) => <li className="relative">{wrapCitations(children)}</li>,
+                  strong: ({ children }) => (
+                    <strong className="font-[600]">{wrapCitations(children)}</strong>
+                  ),
+                  em: ({ children }) => <em className="italic">{wrapCitations(children)}</em>,
+                  a: ({ href, children }) => (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline decoration-1 underline-offset-[3px] hover:decoration-2"
+                    >
+                      {children}
+                    </a>
+                  ),
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l border-foreground/40 pl-4 text-foreground/85 italic">
+                      {children}
+                    </blockquote>
+                  ),
+                  h1: ({ children }) => (
+                    <h3 className="mt-2 font-display text-[22px] font-[600] leading-[1.2] tracking-[-0.015em]">
+                      {wrapCitations(children)}
+                    </h3>
+                  ),
+                  h2: ({ children }) => (
+                    <h3 className="mt-2 font-display text-[20px] font-[600] leading-[1.2] tracking-[-0.015em]">
+                      {wrapCitations(children)}
+                    </h3>
+                  ),
+                  h3: ({ children }) => (
+                    <h4 className="mt-1 font-display text-[18px] font-[600] leading-[1.25]">
+                      {wrapCitations(children)}
+                    </h4>
+                  ),
+                  hr: () => <hr className="border-t border-rule" />,
+                  code: ({ className, children, ...props }) => {
+                    const isFenced = typeof className === 'string' && /language-/.test(className);
+                    if (isFenced) {
+                      // Fenced block — wrapped by <pre> below, keep
+                      // monospace + language class for future highlighter.
+                      return (
+                        <code className={cn('font-mono text-[13px]', className)} {...props}>
+                          {children}
+                        </code>
+                      );
+                    }
+                    return (
+                      <code className="rounded bg-muted px-[0.35em] py-[0.15em] font-mono text-[0.86em]">
+                        {children}
+                      </code>
+                    );
+                  },
+                  pre: ({ children }) => (
+                    <pre className="overflow-x-auto border border-rule bg-muted/60 p-4 leading-[1.55]">
+                      {children}
+                    </pre>
+                  ),
+                }}
+              >
+                {content}
+              </ReactMarkdown>
             )}
+            {streaming && hasBody && <span className="caret" aria-hidden />}
           </article>
 
           {error && (
@@ -127,14 +190,61 @@ function MessageImpl({
           {citations && citations.length > 0 && (
             <SourcesPanel citations={citations} onOpen={onOpenCitation} />
           )}
+
+          {/* Action row — copy + (regenerate on the most recent turn).
+              Visible as soon as the message has stopped streaming, so
+              the user can act the instant the answer settles. */}
+          {!streaming && hasBody && (
+            <div className="mt-3 flex items-center gap-1">
+              <CopyButton text={content} />
+              {isLastAssistant && onRegenerate && (
+                <button
+                  type="button"
+                  onClick={onRegenerate}
+                  aria-label="Regenerate response"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-transparent px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground transition hover:border-rule hover:text-foreground"
+                >
+                  <RotateCcw className="h-3 w-3" aria-hidden />
+                  Regenerate
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
   );
 }
 
-// Memoise so settled messages don't re-render every time a new chunk
-// arrives for the assistant message being streamed. The parent's
-// `messages.map(...)` preserves object identity for unchanged messages,
-// so shallow prop comparison is enough — React skips the whole subtree.
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const onClick = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* clipboard denied — silently ignore */
+    }
+  }, [text]);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={copied ? 'Copied' : 'Copy message'}
+      className="inline-flex items-center gap-1.5 rounded-md border border-transparent px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground transition hover:border-rule hover:text-foreground"
+    >
+      {copied ? (
+        <Check className="h-3 w-3" aria-hidden />
+      ) : (
+        <Copy className="h-3 w-3" aria-hidden />
+      )}
+      {copied ? 'Copied' : 'Copy'}
+    </button>
+  );
+}
+
+// Memo — settled messages don't re-render when a new chunk arrives for
+// the message currently streaming. Parent preserves object identity on
+// unchanged messages, so shallow prop comparison works.
 export const Message = memo(MessageImpl);
