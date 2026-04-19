@@ -67,7 +67,7 @@ export async function generateConversationTitle(
     // "Title:", quote marks, trailing punctuation, runs of whitespace.
     const cleaned = text
       .trim()
-      .replace(/^\s*title\s*[:\-]\s*/i, '')
+      .replace(/^\s*title\s*[:-]\s*/i, '')
       .replace(/^["'`]+|["'`.!?]+$/g, '')
       .replace(/\s+/g, ' ')
       .trim()
