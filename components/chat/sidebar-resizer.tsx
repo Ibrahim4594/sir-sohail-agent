@@ -9,25 +9,27 @@ import { cn } from '@/lib/utils';
  * on the SidebarProvider's root div. Persists to cookie (SSR read)
  * + localStorage (client fast path).
  *
- * Pattern lifted from lumpinif/shadcn-resizable-sidebar (211★ on
- * GitHub — the reference implementation for shadcn/ui sidebars):
+ * Pattern: lumpinif/shadcn-resizable-sidebar (the canonical reference
+ * for shadcn-sidebar resizing). Specifically:
  *
- *   1. mousemove / mouseup listeners attach to DOCUMENT at mount,
- *      not per-gesture. One set of handlers, always active.
- *   2. An `isInteracting` ref gates whether the handlers do any
- *      work — flipped true on mousedown, false on mouseup.
- *   3. A 5px dead-zone before `isDragging` goes true — prevents
- *      an accidental toggle-click from being interpreted as a
- *      drag.
- *   4. Refs (not state) for every drag-time mutable — no React
- *      re-render between mousedown and the first mousemove.
+ *   1. `mousemove` / `mouseup` listeners attach to DOCUMENT at mount,
+ *      not per-gesture. One pair always active. An `isInteracting`
+ *      ref gates whether they do work — flipped on mousedown, off
+ *      on mouseup. This avoids the React-render gap between mousedown
+ *      and useEffect-attached listeners that bit two earlier attempts.
  *
- * Why this works where the previous pointer-events attempts
- * didn't: on some stacking contexts and inside shadcn's nested
- * fixed/relative layout, pointermove events bound per-gesture
- * were delivered to intermediate elements instead of bubbling
- * up. Listening on `document` unconditionally sidesteps the
- * delivery question entirely.
+ *   2. 5px dead-zone before `isDragging` flips true — prevents a
+ *      careless click from being read as a drag.
+ *
+ *   3. During a drag, `body[data-sidebar-dragging="true"]` is set.
+ *      A global CSS rule in globals.css neutralises every transition
+ *      inside the sidebar tree while that attribute is present. The
+ *      shadcn panel has `transition-[width] duration-200` baked in,
+ *      which otherwise makes the panel lag 200ms behind the cursor
+ *      and reads as "drag not working."
+ *
+ *   4. Every drag-time mutable is a ref, not state — the only state
+ *      is the visual `dragging` flag that drives the handle colour.
  */
 
 const MIN_WIDTH_PX = 200;
@@ -62,18 +64,11 @@ export function SidebarResizer() {
   const { state, isMobile } = useSidebar();
   const handleRef = useRef<HTMLButtonElement>(null);
   const wrapperRef = useRef<HTMLElement | null>(null);
-  // Refs for drag state — using refs (not state) avoids a
-  // re-render between mousedown and the first mousemove. Only the
-  // visual `dragging` flag below uses useState, because it drives
-  // the hairline colour change.
   const isInteractingRef = useRef(false);
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const [dragging, setDragging] = useState(false);
 
-  // Global mousemove / mouseup handlers — attached once to
-  // document at mount. They early-return unless isInteracting is
-  // true, so they cost nothing outside a drag.
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (!isInteractingRef.current) return;
@@ -84,6 +79,9 @@ export function SidebarResizer() {
         setDragging(true);
         document.body.style.cursor = 'ew-resize';
         document.body.style.userSelect = 'none';
+        // Freeze transitions in the sidebar tree — fixes the visible
+        // 200ms lag that made previous drag attempts feel broken.
+        document.body.dataset.sidebarDragging = 'true';
       }
 
       if (!isDraggingRef.current) return;
@@ -103,6 +101,7 @@ export function SidebarResizer() {
       setDragging(false);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+      delete document.body.dataset.sidebarDragging;
       if (wasDragging && wrapperRef.current) {
         const val = wrapperRef.current.style.getPropertyValue('--sidebar-width');
         const num = Number.parseInt(val, 10);
@@ -120,8 +119,6 @@ export function SidebarResizer() {
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
-    // Fast-path: cache wrapper now so the move loop doesn't
-    // re-walk the DOM on every event.
     wrapperRef.current = findWrapper(handleRef.current);
     isInteractingRef.current = true;
     startXRef.current = e.clientX;

@@ -477,6 +477,21 @@
   }
 }
 
+/* While the sidebar resizer is being dragged, kill every transition
+   inside the sidebar tree. The shadcn sidebar panel has
+   `transition-[width] duration-200` hard-coded, which makes the panel
+   lag 200ms behind the cursor during a resize — it reads as "drag
+   not working" even though the variable IS being written correctly.
+   The resizer sets this data attribute on <body> on mousedown and
+   removes it on mouseup.
+
+   Lives outside the @layer so it wins specificity against Tailwind's
+   transition utilities without needing !important. Pattern taken
+   from lumpinif/shadcn-resizable-sidebar. */
+body[data-sidebar-dragging="true"] * {
+  transition-duration: 0ms;
+}
+
 /* Motion accommodations. If the OS preference is `reduce`, jump the
    CSS-driven landing animations to their final frame. The live
    trace's JS timeline handles this separately in its own component. */
