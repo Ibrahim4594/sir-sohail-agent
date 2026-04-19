@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { PromptInputBox } from '@/components/ai-prompt-box';
 import { EmptyState } from './empty-state';
 import { MessageList } from './message-list';
@@ -43,9 +43,24 @@ export function ChatShell({
     };
   }, []);
 
-  async function send(text: string) {
-    const snapshot = messages;
-    const userMsg: UIMessage = { id: crypto.randomUUID(), role: 'user', content: text };
+  async function send(text: string, opts: { regenerate?: boolean; snapshot?: UIMessage[] } = {}) {
+    // `regenerate` mode re-runs the last user message. The caller
+    // trims the messages array down to the last user turn and passes
+    // it via `opts.snapshot` so we don't race React's state commit —
+    // reading `messages` from state here would give us a stale value
+    // inside a queueMicrotask/useCallback path.
+    const snapshot = opts.snapshot ?? messages;
+    let userMsg: UIMessage;
+    let workingMessages: UIMessage[];
+    if (opts.regenerate) {
+      const last = snapshot[snapshot.length - 1];
+      if (!last || last.role !== 'user') return;
+      userMsg = last;
+      workingMessages = snapshot;
+    } else {
+      userMsg = { id: crypto.randomUUID(), role: 'user', content: text };
+      workingMessages = [...snapshot, userMsg];
+    }
     const assistantId = crypto.randomUUID();
     const assistantMsg: UIMessage = {
       id: assistantId,
@@ -54,12 +69,39 @@ export function ChatShell({
       streaming: true,
     };
 
-    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+    setMessages([...workingMessages, assistantMsg]);
     setStreaming(true);
     setWarmingUp(false);
 
     const updateAssistant = (fn: (m: UIMessage) => UIMessage) =>
       setMessages((prev) => prev.map((m) => (m.id === assistantId ? fn(m) : m)));
+
+    // Token coalescing. A local LLM emits 40–120 tokens/sec; one
+    // setMessages per token means 40+ React commits per second, each
+    // mapping over the whole messages array and triggering a scroll
+    // in the child. We buffer incoming tokens in a ref and flush on a
+    // 50ms timer — same output, ~1/5 the commits. Pattern borrowed
+    // from ChatGPT (reverse-engineered) and common in streaming UIs.
+    let tokenBuffer = '';
+    let flushTimer: number | null = null;
+    const flushTokens = () => {
+      flushTimer = null;
+      if (!tokenBuffer) return;
+      const chunk = tokenBuffer;
+      tokenBuffer = '';
+      updateAssistant((m) => ({ ...m, content: m.content + chunk }));
+    };
+    const scheduleFlush = () => {
+      if (flushTimer !== null) return;
+      flushTimer = window.setTimeout(flushTokens, 50);
+    };
+    const flushNow = () => {
+      if (flushTimer !== null) {
+        window.clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+      flushTokens();
+    };
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -73,7 +115,7 @@ export function ChatShell({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           conversationId: convId,
-          messages: [...snapshot, userMsg].map(({ role, content }) => ({ role, content })),
+          messages: workingMessages.map(({ role, content }) => ({ role, content })),
         }),
         signal: controller.signal,
       });
@@ -106,8 +148,12 @@ export function ChatShell({
             continue;
           }
           if (event.type === 'text') {
-            updateAssistant((m) => ({ ...m, content: m.content + event.value }));
+            tokenBuffer += event.value;
+            scheduleFlush();
           } else if (event.type === 'meta') {
+            // Flush any buffered tokens before committing the meta
+            // event so citations never land before their text.
+            flushNow();
             finalId = event.conversationId;
             if (!convId) setConvId(event.conversationId);
             updateAssistant((m) => ({
@@ -116,22 +162,31 @@ export function ChatShell({
               streaming: false,
             }));
           } else if (event.type === 'error') {
+            flushNow();
             updateAssistant((m) => ({ ...m, error: event.message, streaming: false }));
           }
         }
       }
 
+      flushNow();
       updateAssistant((m) => ({ ...m, streaming: false }));
 
       if (!initialId && finalId) router.replace(`/chat/${finalId}`);
       router.refresh();
     } catch (e) {
       const aborted = controller.signal.aborted;
-      const message = aborted
-        ? 'That took longer than expected. The model may be warming up — try again in a moment.'
-        : e instanceof Error
-          ? e.message
-          : String(e);
+      // Distinguish user-stop ("user") from timeout ("timeout") so the
+      // UI shows the right language instead of a generic "took longer
+      // than expected" for a deliberate stop.
+      const reason = (controller.signal as AbortSignal & { reason?: unknown }).reason;
+      const userStopped = aborted && reason === 'user';
+      const message = userStopped
+        ? 'Stopped. Ask again or regenerate when ready.'
+        : aborted
+          ? 'That took longer than expected. The model may be warming up — try again in a moment.'
+          : e instanceof Error
+            ? e.message
+            : String(e);
       updateAssistant((m) => ({
         ...m,
         streaming: false,
@@ -147,6 +202,36 @@ export function ChatShell({
     }
   }
 
+  // P0.1 — Real stop button. Aborts the in-flight fetch with a
+  // distinguishable reason so the catch branch above can render a
+  // "Stopped." message instead of a generic timeout. No-op if
+  // nothing is streaming.
+  const onStop = useCallback(() => {
+    abortRef.current?.abort('user');
+  }, []);
+
+  // P1.1 — Regenerate the last assistant response. Trim the visible
+  // messages down to the last user turn and re-send with the trimmed
+  // snapshot passed explicitly so `send` doesn't race React's state
+  // commit. The previous attempt stays in the DB (we don't delete it
+  // — the user keeps a record of what happened).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `send` is a stable component-scoped function, and passing `snapshot` explicitly sidesteps the stale-closure concern
+  const regenerate = useCallback(() => {
+    if (streaming) return;
+    let lastUserIdx = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        lastUserIdx = i;
+        break;
+      }
+    }
+    if (lastUserIdx === -1) return;
+    const trimmed = messages.slice(0, lastUserIdx + 1);
+    setMessages(trimmed);
+    const text = trimmed[lastUserIdx].content;
+    send(text, { regenerate: true, snapshot: trimmed });
+  }, [messages, streaming]);
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex-1 overflow-hidden">
@@ -158,6 +243,7 @@ export function ChatShell({
             onOpenCitation={setPanelCitation}
             avatarUrl={avatarUrl}
             displayName={displayName}
+            onRegenerate={regenerate}
           />
         )}
       </div>
@@ -175,7 +261,7 @@ export function ChatShell({
 
       <div className="shrink-0 px-6 pb-6 pt-3 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-3xl">
-          <PromptInputBox onSend={send} isLoading={streaming} />
+          <PromptInputBox onSend={send} onStop={onStop} isLoading={streaming} />
         </div>
       </div>
 
