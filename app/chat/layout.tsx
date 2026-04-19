@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Sidebar } from '@/components/chat/sidebar';
+import { ThemeToggleCompact } from '@/components/theme/theme-toggle-compact';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { createServerSupabase } from '@/lib/supabase/server';
 
@@ -29,6 +30,11 @@ export default async function ChatLayout({ children }: { children: React.ReactNo
     null;
 
   return (
+    // SidebarProvider's built-in --sidebar-width (16rem = 256px) is
+    // the proven default — matches ChatGPT, Claude, and shadcn's
+    // reference layouts. We previously had a drag-to-resize handle
+    // here but removed it: not worth the implementation surface for
+    // a feature ChatGPT itself doesn't ship.
     <SidebarProvider defaultOpen={defaultOpen}>
       <Sidebar
         email={user.email ?? 'user'}
@@ -41,6 +47,12 @@ export default async function ChatLayout({ children }: { children: React.ReactNo
             sidebar acts as a drawer. Cmd/Ctrl+B still works everywhere. */}
         <div className="absolute left-3 top-3 z-20 md:hidden">
           <SidebarTrigger />
+        </div>
+        {/* Ambient theme toggle — top-right, above the chat column so it
+            never collides with streaming content. Full light/dark picker
+            still lives on /settings. */}
+        <div className="absolute right-3 top-3 z-20">
+          <ThemeToggleCompact />
         </div>
         {children}
       </SidebarInset>
