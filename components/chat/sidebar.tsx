@@ -53,7 +53,7 @@ export async function Sidebar({
   const isAdmin = role === 'admin';
 
   return (
-    <ShadSidebar collapsible="offcanvas" variant="sidebar" className="border-r border-rule">
+    <ShadSidebar collapsible="none" variant="sidebar" className="border-r border-rule">
       {/* Header — brand mark + wordmark */}
       <SidebarHeader className="border-b border-rule p-0">
         <div className="flex h-[60px] items-center gap-2.5 px-3">
