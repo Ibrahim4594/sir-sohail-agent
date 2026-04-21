@@ -10,6 +10,7 @@ const r = (similarity: number): SearchResult => ({
   similarity,
   documentTitle: 't',
   documentFilename: 'f.pdf',
+  section: 'other',
 });
 
 describe('applyThreshold', () => {

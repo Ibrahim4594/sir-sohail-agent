@@ -123,6 +123,30 @@
       "expectAnyTitleMatches": ["innovation education", "practitioners"]
     },
     {
+      "id": "section-001",
+      "kind": "grounded",
+      "question": "What are the main conclusions across the entrepreneurship education papers?",
+      "expectAnyTitleMatches": ["entrepreneurship"]
+    },
+    {
+      "id": "section-002",
+      "kind": "grounded",
+      "question": "What research questions do the project-based learning studies set out to answer?",
+      "expectAnyTitleMatches": ["project-based", "PBL"]
+    },
+    {
+      "id": "section-003",
+      "kind": "grounded",
+      "question": "What problem motivates the design thinking study?",
+      "expectAnyTitleMatches": ["design thinking"]
+    },
+    {
+      "id": "section-004",
+      "kind": "grounded",
+      "question": "How do the authors introduce innovation education in medical schools?",
+      "expectAnyTitleMatches": ["medical"]
+    },
+    {
       "id": "refuse-001",
       "kind": "refusal",
       "question": "Explain the mathematical foundations of quantum entanglement."

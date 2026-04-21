@@ -20,6 +20,7 @@ const src = (id: string, content: string): SearchResult => ({
   similarity: 0.8,
   documentTitle: `Paper ${id}`,
   documentFilename: `${id}.pdf`,
+  section: 'other',
 });
 
 const cite = (marker: number, valid: boolean): VerifiedCitation => ({

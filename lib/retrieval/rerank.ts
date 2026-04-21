@@ -55,7 +55,10 @@ export async function rerankChunks(
   if (candidates.length <= opts.topK) return candidates;
 
   const passages = candidates
-    .map((c, i) => `[${i + 1}] (${c.documentTitle}, p.${c.pageNumber})\n${snippet(c.content)}`)
+    .map(
+      (c, i) =>
+        `[${i + 1}] (${c.documentTitle}, Section: ${c.section}, p.${c.pageNumber})\n${snippet(c.content)}`,
+    )
     .join('\n\n');
 
   const prompt = `You are a relevance grader for a research assistant.
@@ -67,6 +70,8 @@ Rate each passage below on how directly it would help answer the question. Use a
 - 5: touches on the topic but doesn't answer
 - 8: directly relevant, contains answerable material
 - 10: directly and specifically answers the question
+
+PREFER passages whose SECTION directly matches the question's intent — conclusion/results/discussion for "what did they find / conclude"; purpose for research questions and aims; problem for motivation; introduction/abstract for background framing. Methods and references should only score high when the question is specifically about methodology or citation practice.
 
 Passages:
 ${passages}

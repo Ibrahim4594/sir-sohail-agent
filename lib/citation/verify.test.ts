@@ -10,6 +10,7 @@ const mk = (n: number): SearchResult => ({
   similarity: 0.9,
   documentTitle: `Doc ${n}`,
   documentFilename: `f${n}.pdf`,
+  section: 'other',
 });
 
 describe('verifyCitations', () => {

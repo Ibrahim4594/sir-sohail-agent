@@ -13,6 +13,7 @@ import { generateConversationTitle } from '@/lib/prompt/title';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { rerankChunks } from '@/lib/retrieval/rerank';
 import { searchChunks } from '@/lib/retrieval/search';
+import { applySectionBias, detectQueryIntent } from '@/lib/retrieval/section-bias';
 import { applyThreshold } from '@/lib/retrieval/threshold';
 import { createServerSupabase } from '@/lib/supabase/server';
 import type { Json } from '@/lib/supabase/types';
@@ -219,10 +220,18 @@ export async function POST(req: Request) {
     });
   }
 
+  // Section-aware bias — nudges chunks from conclusion / purpose /
+  // problem / introduction ahead of methods-heavy passages BEFORE the
+  // LLM reranker sees them. The bias is applied after the similarity
+  // gate so nothing sub-threshold can sneak in. See lib/retrieval/
+  // section-bias.ts for the score model.
+  const queryIntent = detectQueryIntent(lastUser.content);
+  const biased = applySectionBias(gated.results, queryIntent);
+
   // Rerank the candidate pool with the LLM-as-judge. The answer LLM
   // now sees only the chunks the reranker judged most directly
   // relevant, improving citation precision.
-  const rankedChunks = await rerankChunks(lastUser.content, gated.results, {
+  const rankedChunks = await rerankChunks(lastUser.content, biased, {
     topK: e.RETRIEVAL_TOP_K,
   });
 

@@ -20,6 +20,7 @@ const r = (id: string, similarity: number, content: string): SearchResult => ({
   similarity,
   documentTitle: `Paper ${id}`,
   documentFilename: `${id}.pdf`,
+  section: 'other',
 });
 
 describe('rerankChunks', () => {

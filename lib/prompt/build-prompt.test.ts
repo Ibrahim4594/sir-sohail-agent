@@ -10,6 +10,7 @@ const mkResult = (n: number): SearchResult => ({
   similarity: 0.9 - n * 0.01,
   documentTitle: `Title ${n}`,
   documentFilename: `file${n}.pdf`,
+  section: 'other',
 });
 
 describe('buildPrompt', () => {
@@ -19,9 +20,9 @@ describe('buildPrompt', () => {
       history: [],
       question: 'What does the literature say?',
     });
-    expect(out).toContain('[1] (Title: Title 1, Page: 1)');
+    expect(out).toContain('[1] (Title: Title 1, Section: other, Page: 1)');
     expect(out).toContain('Content 1.');
-    expect(out).toContain('[2] (Title: Title 2, Page: 2)');
+    expect(out).toContain('[2] (Title: Title 2, Section: other, Page: 2)');
     expect(out).toContain('USER QUESTION: What does the literature say?');
   });
 

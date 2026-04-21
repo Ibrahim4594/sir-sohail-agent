@@ -9,6 +9,7 @@ export type SearchResult = {
   pageNumber: number;
   content: string;
   similarity: number;
+  section: string;
   documentTitle: string;
   documentFilename: string;
 };
@@ -41,6 +42,10 @@ export async function searchChunks(query: string, opts: SearchOpts = {}): Promis
     pageNumber: r.page_number,
     content: r.content,
     similarity: r.similarity,
+    // `section` is populated by the 2026-04-22 migration. Older chunks
+    // that predate the migration default to 'other' in the DB; the null
+    // coalesce is defensive against the RPC ever omitting the column.
+    section: (r as { section?: string | null }).section ?? 'other',
     documentTitle: r.document_title,
     documentFilename: r.document_filename,
   }));

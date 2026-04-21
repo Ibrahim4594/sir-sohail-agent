@@ -104,7 +104,11 @@
       "Bash(taskkill //F //PID 1836)",
       "Bash(taskkill //F //PID 25252)",
       "Bash(taskkill //F //PID 10152)",
-      "Bash(wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value)"
+      "Bash(wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value)",
+      "Bash(PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -tAc \"SELECT COUNT\\(*\\) FROM documents WHERE status='ready';\")",
+      "Bash(python -c \"import sys,json;d=json.loads\\(sys.stdin.read\\(\\)\\);[print\\(f\\\\\"{m['name']}: warm until {m['expires_at'][:19].replace\\('T',' '\\)}\\\\\"\\) for m in d['models']]\")",
+      "Bash(python -c \"import sys,json;d=json.loads\\(sys.stdin.read\\(\\)\\);[print\\(f\\\\\"{m['name']}: warm\\\\\"\\) for m in d['models']]\")",
+      "Bash(python -c \"import sys,json;d=json.loads\\(sys.stdin.read\\(\\)\\);[print\\(f\\\\\"✅ {m['name']} — warm\\\\\"\\) for m in d['models']]\")"
     ]
   }
 }

@@ -12,7 +12,7 @@ export function buildPrompt(input: BuildPromptInput): string {
   const contextBlocks = input.chunks
     .map(
       (c, i) =>
-        `[${i + 1}] (Title: ${c.documentTitle}, Page: ${c.pageNumber})\n${c.content.trim()}`,
+        `[${i + 1}] (Title: ${c.documentTitle}, Section: ${c.section}, Page: ${c.pageNumber})\n${c.content.trim()}`,
     )
     .join('\n\n');
 
