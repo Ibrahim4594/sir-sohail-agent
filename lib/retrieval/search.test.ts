@@ -4,7 +4,7 @@ import { searchChunks } from './search';
 // Skip entire suite unless the local stack is up.
 const LIVE = process.env.RAG_LIVE_TESTS === '1';
 
-describe.skipIf(!LIVE)('searchChunks (integration, requires DB + Ollama)', () => {
+describe.skipIf(!LIVE)('searchChunks (integration, requires DB + Gemini API key)', () => {
   it('returns top-K chunks ranked by similarity for a corpus-relevant query', async () => {
     const results = await searchChunks('project-based learning', { topK: 5 });
     expect(results.length).toBeGreaterThan(0);

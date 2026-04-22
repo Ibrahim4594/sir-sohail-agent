@@ -6,8 +6,8 @@ import type { SearchResult } from './search';
  * LLM-as-judge reranker. Retrieval by cosine similarity alone is lossy
  * — two chunks can look equally close in embedding space yet differ
  * sharply in how well they actually answer the question. We fix that by
- * asking the LLM we already have (gemma4:e4b) to score each candidate's
- * relevance in a single batched call, then re-sort by that score.
+ * asking Gemini 3.1 Pro to score each candidate's relevance in a
+ * single batched call, then re-sort by that score.
  *
  * Flow on a research question:
  *   pgvector returns top-N candidates (N = RETRIEVAL_CANDIDATE_K, ~20)
@@ -15,9 +15,9 @@ import type { SearchResult } from './search';
  *     → we keep the top-K highest scorers (K = RETRIEVAL_TOP_K, ~8)
  *     → those go to the answer LLM
  *
- * This costs one extra LLM round-trip (~1-2s on local gemma) but
- * measurably improves citation precision — the answer LLM stops seeing
- * chunks that merely share keywords with the question.
+ * This costs one extra Gemini round-trip (~0.5-1.5s) but measurably
+ * improves citation precision — the answer LLM stops seeing chunks
+ * that merely share keywords with the question.
  */
 const MAX_SNIPPET_CHARS = 700;
 

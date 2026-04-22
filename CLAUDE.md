@@ -16,7 +16,7 @@ Project has funding-demo potential — **treat it as a product, not a prototype*
 **Strict grounding.** The agent must never answer from the base LLM's own knowledge. If retrieval returns nothing relevant, the agent refuses with a soft message and lists related topics the corpus *does* cover. Every claim is backed by a verified citation (paper + page + exact snippet). Three safeguards enforce this and **must remain intact**:
 
 1. **System-prompt discipline** — see [`lib/prompt/system-prompt.ts`](lib/prompt/system-prompt.ts).
-2. **Retrieval similarity threshold** — if no chunk clears `RETRIEVAL_SIMILARITY_THRESHOLD` (default 0.4 cosine), the LLM is skipped entirely. See [`lib/retrieval/threshold.ts`](lib/retrieval/threshold.ts) and [`app/api/chat/route.ts`](app/api/chat/route.ts).
+2. **Retrieval similarity threshold** — if no chunk clears `RETRIEVAL_SIMILARITY_THRESHOLD` (default 0.5 cosine), the LLM is skipped entirely. See [`lib/retrieval/threshold.ts`](lib/retrieval/threshold.ts) and [`app/api/chat/route.ts`](app/api/chat/route.ts).
 3. **Post-generation citation verification** — every `[N]` marker in the LLM output is mapped back to a retrieved chunk; unmapped markers are flagged `valid: false` in the UI. See [`lib/citation/verify.ts`](lib/citation/verify.ts).
 
 Any change that weakens any of these safeguards needs explicit approval.
@@ -33,9 +33,8 @@ Any change that weakens any of these safeguards needs explicit approval.
 | Scroll / timeline animation | GSAP (+ ScrollTrigger) |
 | Motion-graphic animation | Lottie (JSON exported from After Effects / LottieFiles) |
 | AI layer | Vercel AI SDK v6 |
-| LLM (local/dev) | Ollama — `gemma4:e4b` via `ollama-ai-provider-v2` |
-| LLM (cloud/prod) | Google Gemini — `gemini-flash-latest` via `@ai-sdk/google` |
-| Embeddings | `nomic-embed-text` via Ollama (local) or `text-embedding-004` via Google |
+| LLM (all environments) | Google Gemini — `gemini-3.1-pro-preview` via `@ai-sdk/google` |
+| Embeddings | `gemini-embedding-001` via Google, truncated to 768 dims (Matryoshka) to match `pgvector(768)` |
 | PDF parsing | `unpdf` |
 | PDF viewing | `react-pdf` |
 | Database | Supabase (Postgres + pgvector) |
@@ -48,11 +47,11 @@ Any change that weakens any of these safeguards needs explicit approval.
 
 ## Key Architectural Decisions
 
-- **LLM is pluggable.** One env var flip (`LLM_PROVIDER=ollama|gemini`) swaps providers. All calls go through [`lib/llm/model.ts`](lib/llm/model.ts). Do not hardcode provider SDKs in feature code.
-- **Retrieval uses a single Postgres RPC** (`search_chunks`) implemented in [`supabase/migrations/20260416000003_documents_chunks.sql`](supabase/migrations/20260416000003_documents_chunks.sql).
+- **Single LLM provider.** As of 2026-04-22, Gemini is the only provider (per Sir Sohail's meeting — see [`.claude/memory/2026-04-22-sohail-meeting.txt`](.claude/memory/2026-04-22-sohail-meeting.txt)). All calls go through [`lib/llm/model.ts`](lib/llm/model.ts). Feature code must not import provider SDKs directly.
+- **Retrieval uses a single Postgres RPC** (`search_chunks`) implemented in [`supabase/migrations/20260416000003_documents_chunks.sql`](supabase/migrations/20260416000003_documents_chunks.sql). Section column + index added by [`20260422000001_chunk_sections.sql`](supabase/migrations/20260422000001_chunk_sections.sql).
 - **Ingestion runs server-side only.** PDFs never leave the server to be parsed. See [`lib/ingest/ingest-document.ts`](lib/ingest/ingest-document.ts).
-- **Chunk size ≈ 2000 chars / 500 tokens with 200-char overlap** (see `CHUNK_OPTS` in ingest-document.ts).
-- **Retrieval top-K = 8, threshold = 0.4 cosine** — both env-configurable.
+- **Chunk size ≈ 2000 chars / 500 tokens with 200-char overlap**, segmented by IMRaD section before chunking (see [`lib/ingest/sections.ts`](lib/ingest/sections.ts)).
+- **Retrieval top-K = 8, threshold = 0.5 cosine** — both env-configurable. Section-aware bias runs between threshold gate and reranker (see [`lib/retrieval/section-bias.ts`](lib/retrieval/section-bias.ts)).
 - **Env vars are validated with zod** in [`lib/env.ts`](lib/env.ts) (lazy, cached). Non-public env vars MUST NOT be read directly from `process.env` in feature code.
 - **Vector column typing:** Supabase's generated types represent `vector(768)` as `string`. The JS client serializes `number[]` correctly on the wire, so the `as unknown as string` cast at RPC/insert sites is expected and safe — don't remove it without schema changes.
 
@@ -97,9 +96,9 @@ Any change that weakens any of these safeguards needs explicit approval.
 
 Prerequisites:
 - Node 20+ and pnpm 10
-- [Ollama](https://ollama.com/download) running locally (for the local LLM path)
-- Docker Desktop (for the local Supabase stack)
-- Supabase CLI — `npm install -g supabase`
+- A Google AI Studio API key with billing enabled (https://aistudio.google.com/apikey)
+- A Supabase project (hosted or local)
+- Supabase CLI — `npm install -g supabase` (only needed if using the local stack)
 - A Google Cloud OAuth client (for sign-in)
 
 One-time setup:
@@ -107,24 +106,18 @@ One-time setup:
 ```bash
 pnpm install
 
-# Pull local models
-ollama pull gemma4:e4b
-ollama pull nomic-embed-text
-
-# Start the Supabase stack; note the printed anon + service_role keys
-pnpm db:start
-
-# Copy the env template and fill in the Supabase keys from the previous step
+# Copy the env template and fill in the Supabase URL/keys + GEMINI_API_KEY
 cp .env.example .env.local
 # Edit .env.local with your editor
+
+# Apply migrations (skip if using hosted Supabase with migrations already pushed)
+pnpm db:reset
 
 # Regenerate the Database type from the running DB (overwrites the stub)
 pnpm db:types
 
-# Apply migrations
-pnpm db:reset
-
-# One-time bulk ingest of the 40 seed PDFs from ./pdfs
+# One-time bulk ingest of the 40 seed PDFs from ./pdfs. Uses Gemini
+# embeddings and so will consume a small amount of API credit.
 pnpm ingest:corpus
 ```
 
@@ -138,7 +131,7 @@ pnpm typecheck  # tsc --noEmit
 pnpm build      # production build
 ```
 
-Integration tests that actually hit Ollama + the DB are gated behind `RAG_LIVE_TESTS=1`:
+Integration tests that actually hit Gemini + the DB are gated behind `RAG_LIVE_TESTS=1`:
 
 ```bash
 RAG_LIVE_TESTS=1 pnpm test
@@ -152,10 +145,6 @@ After your first sign-in, promote your account in Supabase Studio (http://127.0.
 update public.profiles set role = 'admin'
 where id = (select id from auth.users order by created_at asc limit 1);
 ```
-
-### Switch to the cloud LLM
-
-Set `LLM_PROVIDER=gemini` in `.env.local` and add your `GEMINI_API_KEY`. Restart the dev server. No code changes required.
 
 ## UI & Animation Stack — rules for picking a library
 
@@ -186,7 +175,7 @@ Wait for yes. This applies equally to a 21st.dev component, a Magic UI animation
 - **Tests co-located with source** (`foo.ts` ↔ `foo.test.ts`). Integration tests under `tests/integration/`. E2E under `tests/e2e/`.
 - **No speculative abstraction.** Three similar lines beat a premature helper.
 - **Comment the WHY, never the WHAT.** Names do the explaining.
-- **LLM provider abstraction is the ONLY path.** Never call `fetch('http://localhost:11434/...')` or the provider SDKs directly in feature code.
+- **LLM provider abstraction is the ONLY path.** Feature code must import from [`lib/llm/model.ts`](lib/llm/model.ts); never call `@ai-sdk/google` or any other provider SDK directly from a feature file.
 - **shadcn/ui = base-ui.** This project's `components/ui/button.tsx` wraps `@base-ui/react/button`, not Radix. `<Button asChild>` does **not** work — use `<Link className={cn(buttonVariants(...))}>` instead.
 - **Don't hand-edit `components/ui/*`.** Those are generated by `pnpm dlx shadcn@latest add <component>`. Biome excludes them from linting for this reason.
 
@@ -208,4 +197,4 @@ Wait for yes. This applies equally to a 21st.dev component, a Magic UI animation
 
 ## Current Stage
 
-Scaffold + data layer + RAG pipeline + chat UI + admin flow are all in place. The 40 seed PDFs have not yet been ingested — that happens the first time `pnpm ingest:corpus` runs against a live Supabase + Ollama. After that, the app is fully demo-ready on `pnpm dev`.
+Scaffold + data layer + RAG pipeline + chat UI + admin flow are all in place. The pipeline runs on pure Gemini 3.1 Pro (chat + rerank + entailment + titles + follow-ups) with `gemini-embedding-001` for retrieval. Re-ingestion (`pnpm ingest:corpus`) is required any time `GEMINI_EMBEDDING_MODEL` changes because the embedding space changes with it. The app is demo-ready on `pnpm dev` once the 40 PDFs are ingested.

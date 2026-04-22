@@ -7,14 +7,17 @@ import { MessageList } from './message-list';
 import { PdfPanel } from './pdf-panel';
 import type { Citation, StreamEvent, UIMessage } from './types';
 
-// Hard upper bound on a single chat turn. Local gemma on a cold model
-// plus a full RAG round-trip (embed → search → rerank → stream → verify
-// → entailment) typically settles in under 30s. 90s is the safety net
-// — if we're still waiting this long, something is wrong and the user
-// deserves an error instead of an indefinite blinking caret.
+// Hard upper bound on a single chat turn. A full Gemini RAG round-trip
+// (embed → search → rerank → stream → verify → entailment) typically
+// settles in 4-8s. 90s is the safety net — if we're still waiting
+// this long, something is wrong (network, rate limit, provider
+// incident) and the user deserves an error instead of an indefinite
+// blinking caret.
 const STREAM_TIMEOUT_MS = 90_000;
-// How long to wait before telling the user the model is warming up.
-// The first response after a cold start of Ollama can take ~15-20s.
+// How long to wait before telling the user the request is still in
+// flight. A cold Gemini pipeline with a complex retrieval can take
+// several seconds; 3s is the threshold past which "still working" is
+// useful feedback.
 const WARMING_UP_AFTER_MS = 3_000;
 
 export function ChatShell({

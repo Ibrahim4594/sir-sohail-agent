@@ -1,7 +1,7 @@
 /**
  * Vitest setup — load .env.local into process.env before any module is
  * imported. Required for integration tests (RAG_LIVE_TESTS=1) because
- * they hit the real Supabase + Ollama pipeline, which reads env vars
+ * they hit the real Supabase + Gemini pipeline, which reads env vars
  * through lib/env.ts. Next.js loads .env.local automatically; vitest
  * doesn't, so we do it manually here.
  */

@@ -9,11 +9,11 @@ export default defineConfig({
     include: ['lib/**/*.test.ts', 'components/**/*.test.ts', 'tests/integration/**/*.test.ts'],
     exclude: ['tests/e2e/**'],
     // Loads .env.local into process.env before any test module imports,
-    // so integration tests can reach Supabase + Ollama just like the
+    // so integration tests can reach Supabase + Gemini just like the
     // Next.js app does in dev.
     setupFiles: ['tests/setup-env.ts'],
-    // Integration tests call live Ollama; local gemma inference can
-    // take 15-30s on a cold model. Unit tests (the vast majority) run
+    // Integration tests call live Gemini; the 5-stage pipeline can
+    // take 3-8s per golden case. Unit tests (the vast majority) run
     // well under a second and aren't hurt by the higher cap.
     testTimeout: 60000,
   },

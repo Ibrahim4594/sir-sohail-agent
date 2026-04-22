@@ -1,5 +1,5 @@
 import { embedMany } from 'ai';
-import { getEmbeddingModel } from '@/lib/llm/model';
+import { EMBEDDING_PROVIDER_OPTIONS, getEmbeddingModel } from '@/lib/llm/model';
 import { createServiceRoleSupabase } from '@/lib/supabase/server';
 import { chunkPage } from './chunk';
 import { parsePdf } from './parse-pdf';
@@ -67,7 +67,11 @@ export async function ingestDocument(input: IngestInput): Promise<IngestResult> 
     const embeddings: number[][] = [];
     for (let i = 0; i < staged.length; i += BATCH) {
       const slice = staged.slice(i, i + BATCH).map((s) => s.content);
-      const { embeddings: batch } = await embedMany({ model: embeddingModel, values: slice });
+      const { embeddings: batch } = await embedMany({
+        model: embeddingModel,
+        values: slice,
+        providerOptions: EMBEDDING_PROVIDER_OPTIONS,
+      });
       embeddings.push(...batch);
     }
 

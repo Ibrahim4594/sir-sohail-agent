@@ -1,0 +1,71 @@
+Meeting: "Muhammad Ahmed - EMU's Zoom Meeting"
+Date: 2026-04-22
+Participants: Muhammad Ahmed (EMU, led the discussion), Ibrahim Samad, hilal khan
+Approx end: 11:15
+
+Summary (captured from the meeting transcript):
+
+1. Knowledge-Based Systems and Data Hierarchy
+   Muhammad Ahmed explained the progression from data to wisdom:
+   the lowest form of knowledge is DATA, which is used to create
+   INFORMATION; through cleanup and creating RULES, information
+   becomes KNOWLEDGE, which is then refined to create WISDOM.
+
+2. Context Identification Methods
+   Discussion covered how to identify context using vector-based
+   similarity checks with words. Muhammad Ahmed emphasised the
+   grounding constraints the agent must enforce:
+     - Answer ONLY from provided context.
+     - Never use generalised knowledge.
+     - Never search the web.
+   He framed these as both "negative" and "positive" constraints.
+
+3. Project-Based Learning
+   Discussed in relation to how vectors are created from words and
+   how refined information is retrieved from multiple sources.
+
+4. Research and Experimentation
+   Muhammad Ahmed emphasised conducting experiments with clear
+   objectives and targets to prove or disprove hypotheses.
+
+5. Graduate Class Discussion Example
+   Ibrahim Samad presented a scenario about a professor who designs
+   structured discussions in graduate classes that guide students
+   toward specific analysis and conclusions rather than leaving
+   topics open-ended. This is the "advisory / evaluative" pattern
+   that rule 10 of the system prompt already handles.
+
+6. Application Development Process
+   The agent extracts information from PDFs and datasets, uses the
+   database and corpus as the single source of truth, follows a
+   step-by-step retrieval-and-synthesis process, and enforces rules
+   (discussed as rule 98, or rules 10 / 11 — rules 10 and 11 are
+   the advisory and section-priority rules currently in
+   lib/prompt/system-prompt.ts).
+
+7. Provider / runtime decision
+   Sir Sohail asked for the runtime to use Gemini 3.1 Pro for every
+   LLM call (chat, reranker, intent router, entailment audit,
+   titles, follow-ups). Ollama is to be removed entirely so the
+   pipeline has no provider-swap risk and no dev/prod embedding
+   drift. This removes the LLM_PROVIDER env var and the
+   ollama-ai-provider-v2 dependency.
+
+8. Closing
+   Meeting ended at around 11:15 with goodbyes exchanged.
+
+Mapping to code (as of 2026-04-22):
+   - Rule 1 (no general knowledge, no web): lib/prompt/system-prompt.ts rule 1
+   - Rule 2 (refuse only on true miss): lib/prompt/system-prompt.ts rule 2
+   - Vector similarity: supabase/migrations/20260416000003_documents_chunks.sql
+     (search_chunks RPC using pgvector + cosine distance) and
+     lib/retrieval/search.ts
+   - Threshold gate: lib/retrieval/threshold.ts (0.5 cosine on the
+     EMU corpus)
+   - Reranker (LLM-as-judge): lib/retrieval/rerank.ts
+   - Citation verification: lib/citation/verify.ts
+   - Entailment audit: lib/citation/entailment.ts
+   - Advisory / evaluative structure (rule 10): lib/prompt/system-prompt.ts rule 10
+   - Section priority (rule 11): lib/prompt/system-prompt.ts rule 11
+   - Graduate-class example: lib/prompt/system-prompt.ts rule 10
+     (unblocked refusals for "what do you recommend" style questions)

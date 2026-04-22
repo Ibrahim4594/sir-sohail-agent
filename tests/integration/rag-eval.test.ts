@@ -1,7 +1,7 @@
 /**
  * Golden RAG eval — measures retrieval quality end-to-end against the
- * real corpus. Gated behind RAG_LIVE_TESTS=1 because it needs the DB
- * and Ollama running. Run:
+ * real corpus. Gated behind RAG_LIVE_TESTS=1 because it hits a live
+ * Supabase + Gemini pipeline. Run:
  *
  *   RAG_LIVE_TESTS=1 pnpm exec vitest run tests/integration/rag-eval.test.ts
  *

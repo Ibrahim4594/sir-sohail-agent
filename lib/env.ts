@@ -1,13 +1,18 @@
 import { z } from 'zod';
 
 const schema = z.object({
-  LLM_PROVIDER: z.enum(['ollama', 'gemini']).default('ollama'),
-  OLLAMA_BASE_URL: z.string().url().default('http://localhost:11434'),
-  OLLAMA_MODEL: z.string().default('gemma4:e4b'),
-  OLLAMA_EMBEDDING_MODEL: z.string().default('nomic-embed-text'),
-  GEMINI_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default('gemini-flash-latest'),
-  GEMINI_EMBEDDING_MODEL: z.string().default('text-embedding-004'),
+  // Gemini is the one and only provider. The Ollama branch was
+  // removed 2026-04-22 after Sir Sohail's meeting — see
+  // .claude/memory/2026-04-22-sohail-meeting.txt. Rationale: one
+  // provider means one embedding space, no dev/prod drift, and no
+  // LLM_PROVIDER misconfiguration risk.
+  GEMINI_API_KEY: z.string().min(1),
+  GEMINI_MODEL: z.string().default('gemini-3.1-pro-preview'),
+  // gemini-embedding-001 natively outputs 3072 dims; we ask for 768
+  // via outputDimensionality in getEmbeddingModel() so the stored
+  // chunks.embedding column (pgvector(768)) doesn't need a schema
+  // migration.
+  GEMINI_EMBEDDING_MODEL: z.string().default('gemini-embedding-001'),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
@@ -17,17 +22,10 @@ const schema = z.object({
   // more to work with; too wide and the rerank call gets slow.
   RETRIEVAL_TOP_K: z.coerce.number().int().positive().default(8),
   RETRIEVAL_CANDIDATE_K: z.coerce.number().int().positive().default(20),
-  // Tuned for nomic-embed-text v1 on the EMU innovation-ed corpus —
-  // its similarity distribution clusters higher than v2-moe, so the
-  // old 0.4 gate let too many off-topic queries through. Measured in
-  // the golden eval: 0.5 restores refusal precision without material
-  // damage to grounded recall.
-  //
-  // SECURITY NOTE: the lower bound is 0.2, not 0. A threshold of 0
-  // would pass every retrieved chunk through the grounding gate,
-  // silently disabling safeguard #2 and letting the LLM answer from
-  // noise. Requiring a floor means a misconfigured env var fails
-  // loud at startup instead of ungating the corpus.
+  // Similarity gate tuned for Gemini's embedding distribution on the
+  // EMU innovation-ed corpus. A floor of 0.2 is enforced so a
+  // misconfigured env can never silently disable safeguard #2 and
+  // let the LLM answer from noise.
   RETRIEVAL_SIMILARITY_THRESHOLD: z.coerce.number().min(0.2).max(1).default(0.5),
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
 });
