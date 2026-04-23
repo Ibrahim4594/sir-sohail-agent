@@ -13,6 +13,35 @@ Project has funding-demo potential — **treat it as a product, not a prototype*
 - Full spec: [`docs/superpowers/specs/2026-04-16-pdf-agent-design.md`](docs/superpowers/specs/2026-04-16-pdf-agent-design.md)
 - Implementation plan: [`docs/superpowers/plans/2026-04-16-pdf-agent-implementation.md`](docs/superpowers/plans/2026-04-16-pdf-agent-implementation.md)
 
+## What Sir Sohail Wants — Canonical
+
+This section is the source of truth for **user intent**. It's separated into what was asked at project inception and what was reinforced at the 2026-04-22 meeting. Both sets must hold; neither supersedes the other.
+
+### From day one (2026-04-16 spec — see `docs/superpowers/specs/2026-04-16-pdf-agent-design.md`)
+
+1. **A chat agent bound to a closed library of ~40 peer-reviewed PDFs** on innovation education, entrepreneurship pedagogy, and project-based learning.
+2. **Every answer is cited.** Each citation links to the exact page of the source PDF. No uncited claims.
+3. **Never use general knowledge, never touch the web.** If the corpus doesn't cover a question, refuse politely.
+4. **Funder-demo ready.** Treat as a product, not a prototype. The grounding story (citation in one click, refusal on off-topic) is itself the pitch.
+5. **Primary users:** Sir Sohail (admin + demoer), EMU students (readers), funders (future guest viewers).
+
+### Reinforced at the 2026-04-22 meeting
+
+Full transcript in [`.claude/memory/2026-04-22-sohail-meeting.txt`](.claude/memory/2026-04-22-sohail-meeting.txt). What Sir said, in his own framing:
+
+1. **DIKW hierarchy** — data → information → knowledge → wisdom. PDFs are data; chunks + embeddings are information; the system prompt + retrieval rules are knowledge; cited-and-verified answers are wisdom. This is the mental model, not a feature; the pipeline already implements it.
+2. **Vector-based context identification.** Validated what was already built (pgvector + cosine similarity + threshold gate).
+3. **Both positive and negative constraints.** Negative = "never use generalised knowledge, never search the web" (rule #1). Positive = "only answer from provided context" (rule #2). Both must be present in the system prompt at all times.
+4. **Rules 10 and 11 (Sir referenced these by number).** Rule 10 = advisory/evaluative questions must be answered as structured summaries along good/bad/improve axes. Rule 11 = section priority (findings → conclusion/results; aims → purpose; motivation → problem/introduction). Both are live in `lib/prompt/system-prompt.ts`.
+5. **Ibrahim's graduate-class example** — "professor designs structured discussions that force analysis rather than leaving them open-ended." That's the canonical shape of the advisory question rule 10 is built to handle.
+6. **Single LLM provider.** Gemini 3.1 Pro for every call. Ollama removed entirely. One embedding space, no dev/prod drift.
+7. **Experimentation mindset.** Sir framed the agent as a hypothesis-testable system with clear objectives. That maps to the golden eval harness in `tests/integration/rag-eval.test.ts` — keep running it after every retrieval, reranker, or prompt change.
+
+### What was NOT requested (stay out of these)
+
+- Fine-tuning a custom model (Sir asked about it; I explained why RAG + prompting is the correct tool for this problem — see the "Things NOT in scope" list below)
+- Mobile apps, multi-user real-time editing, formal citation styles (APA/MLA), admin analytics dashboards, non-English support. These are listed as out of scope in the spec and the meeting did not add them.
+
 ## The One Non-Negotiable Rule
 
 **Strict grounding.** The agent must never answer from the base LLM's own knowledge. If retrieval returns nothing relevant, the agent refuses with a soft message and lists related topics the corpus *does* cover. Every claim is backed by a verified citation (paper + page + exact snippet). Three safeguards enforce this and **must remain intact**:
