@@ -15,7 +15,7 @@ export default async function Home() {
   } = await supabase.auth.getUser();
   if (user) redirect('/chat');
 
-  let paperCount = 40;
+  let paperCount = 52;
   let marqueeTitles: string[] = [];
 
   // Best-effort fetch of the actual corpus. If it's empty or we can't

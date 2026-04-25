@@ -10,7 +10,7 @@ export default async function SignInPage() {
   } = await supabase.auth.getUser();
   if (user) redirect('/chat');
 
-  let paperCount = 40;
+  let paperCount = 52;
   try {
     const { count } = await supabase.from('documents').select('*', { count: 'exact', head: true });
     if (typeof count === 'number' && count > 0) paperCount = count;

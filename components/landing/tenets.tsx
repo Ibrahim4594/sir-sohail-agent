@@ -35,7 +35,7 @@ const TENETS: Tenet[] = [
   },
   {
     id: 'closed-library',
-    claim: 'Forty peer-reviewed papers. Closed library. Nothing outside is ever invented.',
+    claim: 'Fifty-two peer-reviewed papers. Closed library. Nothing outside is ever invented.',
     anchor: 'lib/prompt/system-prompt.ts',
   },
   {

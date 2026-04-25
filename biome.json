@@ -17,6 +17,7 @@
       "!.agents",
       "!.tools",
       "!.firecrawl",
+      "!.vercel",
       "!public"
     ]
   },
