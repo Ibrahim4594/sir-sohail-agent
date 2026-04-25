@@ -13,6 +13,15 @@ export type IngestInput = {
   storagePath: string;
   uploadedBy?: string;
   data: Uint8Array;
+  /**
+   * Optional pre-parsed page text. When set, parsePdf() is skipped
+   * and these strings are used directly. The OCR script (for scanned
+   * PDFs whose unpdf extraction returns empty text) populates this
+   * with Gemini-transcribed pages so the rest of the pipeline —
+   * section detection, chunking, embedding, insertion — runs
+   * unchanged.
+   */
+  prePages?: string[];
 };
 
 export type IngestResult = {
@@ -38,7 +47,9 @@ export async function ingestDocument(input: IngestInput): Promise<IngestResult> 
   if (insertErr || !doc) throw new Error(`Failed to create document: ${insertErr?.message}`);
 
   try {
-    const parsed = await parsePdf(input.data);
+    const parsed = input.prePages
+      ? { pageCount: input.prePages.length, pages: input.prePages }
+      : await parsePdf(input.data);
 
     // Tag each chunk with its IMRaD section so section-aware retrieval
     // can boost conclusion / purpose / problem / introduction passages
