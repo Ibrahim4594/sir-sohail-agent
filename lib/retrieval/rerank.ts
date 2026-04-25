@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import { getChatModel } from '@/lib/llm/model';
+import { getHelperModel } from '@/lib/llm/model';
 import type { SearchResult } from './search';
 
 /**
@@ -80,7 +80,7 @@ Respond with exactly ${candidates.length} lines, each formatted as "N: SCORE" (o
 
   try {
     const { text } = await generateText({
-      model: getChatModel(),
+      model: getHelperModel(),
       prompt,
       // biome-ignore lint/suspicious/noExplicitAny: maxOutputTokens varies by provider
       ...({ maxOutputTokens: 16 * candidates.length } as any),

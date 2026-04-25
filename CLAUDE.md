@@ -64,7 +64,8 @@ Any change that weakens any of these safeguards needs explicit approval.
 | Scroll / timeline animation | GSAP (+ ScrollTrigger) |
 | Motion-graphic animation | Lottie (JSON exported from After Effects / LottieFiles) |
 | AI layer | Vercel AI SDK v6 |
-| LLM (all environments) | Google Gemini — `gemini-3.1-pro-preview` via `@ai-sdk/google` |
+| LLM — answer model | Google Gemini — `gemini-3.1-pro-preview` via `@ai-sdk/google` (the user-facing streamed answer) |
+| LLM — helper model | Google Gemini — `gemini-flash-latest` via `@ai-sdk/google` (intent router, reranker, entailment audit, title, follow-ups) |
 | Embeddings | `gemini-embedding-001` via Google, truncated to 768 dims (Matryoshka) to match `pgvector(768)` |
 | PDF parsing | `unpdf` |
 | PDF viewing | `react-pdf` |
@@ -79,6 +80,7 @@ Any change that weakens any of these safeguards needs explicit approval.
 ## Key Architectural Decisions
 
 - **Single LLM provider.** As of 2026-04-22, Gemini is the only provider (per Sir Sohail's meeting — see [`.claude/memory/2026-04-22-sohail-meeting.txt`](.claude/memory/2026-04-22-sohail-meeting.txt)). All calls go through [`lib/llm/model.ts`](lib/llm/model.ts). Feature code must not import provider SDKs directly.
+- **Two-tier model setup.** As of 2026-04-25 there are two factory functions in `lib/llm/model.ts`: `getChatModel()` returns the answer model (Pro by default) and is used only for the user-facing generation in `app/api/chat/route.ts` and for the OCR script in `scripts/ingest-ocr.ts`. `getHelperModel()` returns the helper model (Flash by default) and is used by intent-router, reranker, entailment audit, title, and follow-ups. The split keeps quality where users see it and cost where they don't (~10x cheaper helper calls).
 - **Retrieval uses a single Postgres RPC** (`search_chunks`) implemented in [`supabase/migrations/20260416000003_documents_chunks.sql`](supabase/migrations/20260416000003_documents_chunks.sql). Section column + index added by [`20260422000001_chunk_sections.sql`](supabase/migrations/20260422000001_chunk_sections.sql).
 - **Ingestion runs server-side only.** PDFs never leave the server to be parsed. See [`lib/ingest/ingest-document.ts`](lib/ingest/ingest-document.ts).
 - **Chunk size ≈ 2000 chars / 500 tokens with 200-char overlap**, segmented by IMRaD section before chunking (see [`lib/ingest/sections.ts`](lib/ingest/sections.ts)).

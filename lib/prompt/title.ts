@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import { getChatModel } from '@/lib/llm/model';
+import { getHelperModel } from '@/lib/llm/model';
 
 /**
  * Generates a short, human-readable conversation title for the
@@ -57,7 +57,7 @@ export async function generateConversationTitle(
 ): Promise<string | null> {
   try {
     const { text } = await generateText({
-      model: getChatModel(),
+      model: getHelperModel(),
       system: TITLE_SYSTEM_PROMPT,
       prompt: `User: ${userText.slice(0, 500)}\nAssistant: ${assistantText.slice(0, 1500)}\nTitle:`,
       // biome-ignore lint/suspicious/noExplicitAny: maxOutputTokens varies by provider

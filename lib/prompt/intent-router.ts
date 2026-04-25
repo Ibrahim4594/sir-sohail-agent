@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import { getChatModel } from '@/lib/llm/model';
+import { getHelperModel } from '@/lib/llm/model';
 
 /**
  * LLM-driven intent classifier. Runs BEFORE retrieval on every chat
@@ -119,7 +119,7 @@ export async function routeIntent({
     const sanitizedLatest = strip(latest);
 
     const { text } = await generateText({
-      model: getChatModel(),
+      model: getHelperModel(),
       system: INTENT_SYSTEM_PROMPT,
       messages: [
         ...history.slice(-4).map((m) => ({

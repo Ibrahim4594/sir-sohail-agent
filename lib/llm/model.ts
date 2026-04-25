@@ -18,8 +18,31 @@ function getGoogle() {
   return createGoogleGenerativeAI({ apiKey: env().GEMINI_API_KEY });
 }
 
+/**
+ * The answer model — Gemini 3.1 Pro by default. Used for the single
+ * user-facing generation call (the streamed response in
+ * app/api/chat/route.ts). Quality matters most here, so we pay the
+ * Pro price.
+ */
 export function getChatModel(): LanguageModel {
   return getGoogle()(env().GEMINI_MODEL);
+}
+
+/**
+ * The helper model — Gemini Flash by default. Used for the four
+ * cheap pipeline calls behind every question:
+ *   - intent router (classify into research / greeting / etc.)
+ *   - LLM-as-judge reranker (score 20 chunks 0-10)
+ *   - entailment audit (yes/no per cited claim)
+ *   - title + follow-up generation
+ * These calls are short-input / short-output classification or
+ * scoring tasks where Flash is indistinguishable from Pro and ~10x
+ * cheaper. The OCR script (scripts/ingest-ocr.ts) deliberately uses
+ * getChatModel() instead because transcription quality benefits
+ * from Pro.
+ */
+export function getHelperModel(): LanguageModel {
+  return getGoogle()(env().GEMINI_HELPER_MODEL);
 }
 
 export function getEmbeddingModel(): EmbeddingModel {

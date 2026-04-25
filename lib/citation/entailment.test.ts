@@ -7,7 +7,8 @@ vi.mock('ai', () => ({
   generateText: (...args: unknown[]) => generateTextMock(...args),
 }));
 vi.mock('@/lib/llm/model', () => ({
-  getChatModel: () => ({ modelId: 'stub' }),
+  getChatModel: () => ({ modelId: 'stub-pro' }),
+  getHelperModel: () => ({ modelId: 'stub-flash' }),
 }));
 
 const { checkEntailment } = await import('./entailment');

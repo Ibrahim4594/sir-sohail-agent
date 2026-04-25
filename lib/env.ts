@@ -7,7 +7,14 @@ const schema = z.object({
   // provider means one embedding space, no dev/prod drift, and no
   // LLM_PROVIDER misconfiguration risk.
   GEMINI_API_KEY: z.string().min(1),
+  // Two-tier model setup (added 2026-04-25 per Sir Sohail's request).
+  // GEMINI_MODEL is the answer model — used for the main user-facing
+  // generation, where quality matters most. GEMINI_HELPER_MODEL is
+  // used for the four cheap pipeline calls (intent router, LLM-as-
+  // judge reranker, entailment audit, title + follow-up generation)
+  // where Flash quality is sufficient and the cost difference is ~10x.
   GEMINI_MODEL: z.string().default('gemini-3.1-pro-preview'),
+  GEMINI_HELPER_MODEL: z.string().default('gemini-flash-latest'),
   // gemini-embedding-001 natively outputs 3072 dims; we ask for 768
   // via outputDimensionality in getEmbeddingModel() so the stored
   // chunks.embedding column (pgvector(768)) doesn't need a schema

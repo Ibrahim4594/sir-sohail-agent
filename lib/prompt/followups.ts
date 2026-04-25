@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import { getChatModel } from '@/lib/llm/model';
+import { getHelperModel } from '@/lib/llm/model';
 
 /**
  * Generates three short, corpus-grounded follow-up questions a student
@@ -38,7 +38,7 @@ export async function generateFollowUps({
   if (!answer.trim() || titles.length === 0) return [];
   try {
     const { text } = await generateText({
-      model: getChatModel(),
+      model: getHelperModel(),
       system: FOLLOWUP_SYSTEM_PROMPT,
       prompt: `PAPERS CITED: ${titles.join('; ')}\n\nUSER QUESTION: ${question.slice(0, 500)}\n\nASSISTANT ANSWER:\n${answer.slice(0, 2500)}\n\nThree follow-up questions:`,
       // biome-ignore lint/suspicious/noExplicitAny: maxOutputTokens varies by provider

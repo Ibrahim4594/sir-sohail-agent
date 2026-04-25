@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import { getChatModel } from '@/lib/llm/model';
+import { getHelperModel } from '@/lib/llm/model';
 import type { SearchResult } from '@/lib/retrieval/search';
 import type { VerifiedCitation } from './verify';
 
@@ -113,7 +113,7 @@ Respond with exactly ${pairs.length} lines, each formatted as "N: YES" or "N: NO
   let judgements: Map<number, boolean>;
   try {
     const { text } = await generateText({
-      model: getChatModel(),
+      model: getHelperModel(),
       prompt,
       // biome-ignore lint/suspicious/noExplicitAny: maxOutputTokens varies by provider
       ...({ maxOutputTokens: 8 * pairs.length } as any),
