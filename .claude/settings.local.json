@@ -108,7 +108,26 @@
       "Bash(PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -tAc \"SELECT COUNT\\(*\\) FROM documents WHERE status='ready';\")",
       "Bash(python -c \"import sys,json;d=json.loads\\(sys.stdin.read\\(\\)\\);[print\\(f\\\\\"{m['name']}: warm until {m['expires_at'][:19].replace\\('T',' '\\)}\\\\\"\\) for m in d['models']]\")",
       "Bash(python -c \"import sys,json;d=json.loads\\(sys.stdin.read\\(\\)\\);[print\\(f\\\\\"{m['name']}: warm\\\\\"\\) for m in d['models']]\")",
-      "Bash(python -c \"import sys,json;d=json.loads\\(sys.stdin.read\\(\\)\\);[print\\(f\\\\\"✅ {m['name']} — warm\\\\\"\\) for m in d['models']]\")"
+      "Bash(python -c \"import sys,json;d=json.loads\\(sys.stdin.read\\(\\)\\);[print\\(f\\\\\"✅ {m['name']} — warm\\\\\"\\) for m in d['models']]\")",
+      "Bash(npx --no-install supabase --version)",
+      "Bash(cp .env.local .env.local.bak)",
+      "Bash(grep -v \"^LLM_PROVIDER=\\\\|^GEMINI_API_KEY=\" .env.local.bak)",
+      "Bash(echo \"LLM_PROVIDER=gemini\")",
+      "Bash(echo \"GEMINI_API_KEY=AIzaSyCFIL2UVsXPHV0VzscrhoY8VvsPmaGIAHk\")",
+      "Bash(mv .env.local.tmp .env.local)",
+      "Bash(python -c \"import sys,json;d=json.loads\\(sys.stdin.read\\(\\)\\);print\\(d['candidates'][0]['content']['parts'][0]['text']\\)\")",
+      "Bash(python -c \"import sys,json;d=json.loads\\(sys.stdin.read\\(\\)\\);v=d['embedding']['values'];print\\(f'dims={len\\(v\\)} first3={v[:3]}'\\)\")",
+      "Bash(python -c \"import sys,json;d=json.loads\\(sys.stdin.read\\(\\)\\);[print\\(m['name']\\) for m in d['models'] if 'embed' in m['name'].lower\\(\\)]\")",
+      "Bash(python -c \"import sys,json;d=json.loads\\(sys.stdin.read\\(\\)\\);print\\('error:',d['error']['message']\\) if 'error' in d else print\\('dims=',len\\(d['embedding']['values']\\)\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(taskkill //F //PID 29228)",
+      "Bash(npm i *)",
+      "Bash(vercel --version)",
+      "Bash(vercel whoami *)",
+      "Bash(vercel link *)",
+      "Bash(vercel env *)",
+      "Bash(vercel deploy *)",
+      "Bash(set -e)"
     ]
   }
 }
