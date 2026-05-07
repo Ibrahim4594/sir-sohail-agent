@@ -21,8 +21,17 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getUser() can throw when @supabase/ssr's onAuthStateChange async
+  // callback fails to clear cookies (e.g. expired refresh token +
+  // Next.js 16 cookie-API edge cases). Catching here prevents the
+  // middleware from returning a 500 — treat auth failure as signed-out.
+  let user = null;
+  try {
+    ({
+      data: { user },
+    } = await supabase.auth.getUser());
+  } catch {
+    // auth error → treat as unauthenticated; redirect logic below handles it
+  }
   return { response, user };
 }

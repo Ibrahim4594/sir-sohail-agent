@@ -85,6 +85,19 @@ const RERANK_TIMEOUT_MS = 25_000;
 const POST_STREAM_LLM_MS = 28_000;
 
 export async function POST(req: Request) {
+  try {
+    return await handlePost(req);
+  } catch (topErr) {
+    // Any exception that escapes handlePost would become a Next.js HTML 500
+    // with no JSON body, showing "Chat request failed (500)" with no detail.
+    // This catch converts it to a JSON response so the client can show the
+    // real error message.
+    const msg = topErr instanceof Error ? topErr.message : 'Unexpected server error';
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+async function handlePost(req: Request) {
   const parsed = BodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
@@ -478,3 +491,4 @@ export async function POST(req: Request) {
     },
   });
 }
+
