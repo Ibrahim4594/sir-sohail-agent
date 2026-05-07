@@ -127,7 +127,8 @@
       "Bash(vercel link *)",
       "Bash(vercel env *)",
       "Bash(vercel deploy *)",
-      "Bash(set -e)"
+      "Bash(set -e)",
+      "Bash(kill %1)"
     ]
   }
 }

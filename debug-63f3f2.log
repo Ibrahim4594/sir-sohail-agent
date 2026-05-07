@@ -1,0 +1,5 @@
+{"sessionId":"63f3f2","timestamp":1778177627781,"hypothesisId":"VERIFY-ENV","location":"scripts/verify-apis.ts","message":"env parse ok","data":{"supabaseHost":"rsyzbhxbqvwvlfbbjtom.supabase.co","geminiEmbeddingModel":"gemini-embedding-001"}}
+{"sessionId":"63f3f2","timestamp":1778177628682,"hypothesisId":"VERIFY-SUPA-DB","location":"scripts/verify-apis.ts","message":"documents select ok","data":{"rowCount":1}}
+{"sessionId":"63f3f2","timestamp":1778177629726,"hypothesisId":"VERIFY-GEMINI-EMBED","location":"scripts/verify-apis.ts","message":"embed failed","data":{"err":"Your API key was reported as leaked. Please use another API key."}}
+{"sessionId":"63f3f2","timestamp":1778177630127,"hypothesisId":"VERIFY-GEMINI-HELPER","location":"scripts/verify-apis.ts","message":"helper generateText failed","data":{"err":"Your API key was reported as leaked. Please use another API key."}}
+{"sessionId":"63f3f2","timestamp":1778177630792,"hypothesisId":"VERIFY-GEMINI-CHAT","location":"scripts/verify-apis.ts","message":"chat model failed","data":{"err":"Your API key was reported as leaked. Please use another API key."}}
