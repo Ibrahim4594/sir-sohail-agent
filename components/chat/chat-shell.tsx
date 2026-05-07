@@ -150,7 +150,9 @@ export function ChatShell({
           } catch {
             continue;
           }
-          if (event.type === 'text') {
+          if (event.type === 'ack') {
+            // Server opened the stream while retrieval/rerank runs — no content yet.
+          } else if (event.type === 'text') {
             tokenBuffer += event.value;
             scheduleFlush();
           } else if (event.type === 'meta') {

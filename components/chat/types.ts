@@ -20,6 +20,7 @@ export type UIMessage = {
 };
 
 export type StreamEvent =
+  | { type: 'ack' }
   | { type: 'text'; value: string }
   | { type: 'meta'; conversationId: string; citations: Citation[]; followups: string[] }
   | { type: 'error'; message: string };

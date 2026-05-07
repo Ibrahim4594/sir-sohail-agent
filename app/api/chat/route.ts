@@ -12,7 +12,7 @@ import { STRICT_GROUNDING_SYSTEM_PROMPT } from '@/lib/prompt/system-prompt';
 import { generateConversationTitle } from '@/lib/prompt/title';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { rerankChunks } from '@/lib/retrieval/rerank';
-import { searchChunks } from '@/lib/retrieval/search';
+import { type SearchResult, searchChunks } from '@/lib/retrieval/search';
 import { applySectionBias, detectQueryIntent } from '@/lib/retrieval/section-bias';
 import { applyThreshold } from '@/lib/retrieval/threshold';
 import { createServerSupabase } from '@/lib/supabase/server';
@@ -63,6 +63,7 @@ const BodySchema = z.object({
 });
 
 type StreamEvent =
+  | { type: 'ack' }
   | { type: 'text'; value: string }
   | { type: 'meta'; conversationId: string; citations: unknown[]; followups: string[] }
   | { type: 'error'; message: string };
@@ -193,140 +194,122 @@ export async function POST(req: Request) {
   }
 
   const e = env();
-  // Retrieve a wider candidate pool so the LLM-as-judge reranker has
-  // something to choose from. The reranker trims back to RETRIEVAL_TOP_K
-  // before we hand chunks to the answer LLM.
-  const rawResults = await searchChunks(lastUser.content, {
-    topK: e.RETRIEVAL_CANDIDATE_K,
-    similarityThreshold: 0,
-  });
-  const gated = applyThreshold(rawResults, e.RETRIEVAL_SIMILARITY_THRESHOLD);
 
-  // Soft refusal — strict-grounding safeguard #2: skip the LLM entirely.
-  if (!gated.grounded) {
-    await supabase.from('messages').insert({
-      conversation_id: convId,
-      role: 'assistant',
-      content: REFUSAL_MESSAGE,
-      citations: [] as unknown as Json,
-    });
-
-    const refusalStream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(encodeEvent({ type: 'text', value: REFUSAL_MESSAGE }));
-        controller.enqueue(
-          encodeEvent({ type: 'meta', conversationId: convId, citations: [], followups: [] }),
-        );
-        controller.close();
-      },
-    });
-    return new Response(refusalStream, {
-      headers: { 'content-type': 'application/x-ndjson' },
-    });
-  }
-
-  // Section-aware bias — nudges chunks from conclusion / purpose /
-  // problem / introduction ahead of methods-heavy passages BEFORE the
-  // LLM reranker sees them. The bias is applied after the similarity
-  // gate so nothing sub-threshold can sneak in. See lib/retrieval/
-  // section-bias.ts for the score model.
-  const queryIntent = detectQueryIntent(lastUser.content);
-  const biased = applySectionBias(gated.results, queryIntent);
-
-  // Rerank the candidate pool with the LLM-as-judge. The answer LLM
-  // now sees only the chunks the reranker judged most directly
-  // relevant, improving citation precision.
-  const rankedChunks = await rerankChunks(lastUser.content, biased, {
-    topK: e.RETRIEVAL_TOP_K,
-  });
-
-  const userPrompt = buildPrompt({
-    chunks: rankedChunks,
-    history: priorHistory,
-    question: lastUser.content,
-  });
-
-  const result = streamText({
-    model: getChatModel(),
-    messages: [
-      { role: 'system', content: STRICT_GROUNDING_SYSTEM_PROMPT },
-      { role: 'user', content: userPrompt },
-    ],
-  });
-
-  const stream = new ReadableStream({
+  // Open the response body immediately with an `ack` line so the client
+  // stops looking "stuck" while embed → RPC → rerank runs (often 2–8s).
+  // Previously all of that work finished before `return new Response`,
+  // so fetch had no bytes until the answer model started — empty bubble +
+  // easy to mistake for "no reply". Same total server time, much better UX.
+  const ragStream = new ReadableStream({
     async start(controller) {
+      controller.enqueue(encodeEvent({ type: 'ack' }));
       let full = '';
       let streamError: string | null = null;
+      let rankedChunks: SearchResult[] | null = null;
+
       try {
-        for await (const delta of result.textStream) {
-          full += delta;
-          controller.enqueue(encodeEvent({ type: 'text', value: delta }));
+        const rawResults = await searchChunks(lastUser.content, {
+          topK: e.RETRIEVAL_CANDIDATE_K,
+          similarityThreshold: 0,
+        });
+        const gated = applyThreshold(rawResults, e.RETRIEVAL_SIMILARITY_THRESHOLD);
+
+        if (!gated.grounded) {
+          await supabase.from('messages').insert({
+            conversation_id: convId,
+            role: 'assistant',
+            content: REFUSAL_MESSAGE,
+            citations: [] as unknown as Json,
+          });
+          controller.enqueue(encodeEvent({ type: 'text', value: REFUSAL_MESSAGE }));
+          controller.enqueue(
+            encodeEvent({ type: 'meta', conversationId: convId, citations: [], followups: [] }),
+          );
+          controller.close();
+          return;
         }
+
+        const queryIntent = detectQueryIntent(lastUser.content);
+        const biased = applySectionBias(gated.results, queryIntent);
+        rankedChunks = await rerankChunks(lastUser.content, biased, {
+          topK: e.RETRIEVAL_TOP_K,
+        });
+
+        const userPrompt = buildPrompt({
+          chunks: rankedChunks,
+          history: priorHistory,
+          question: lastUser.content,
+        });
+
+        const result = streamText({
+          model: getChatModel(),
+          messages: [
+            { role: 'system', content: STRICT_GROUNDING_SYSTEM_PROMPT },
+            { role: 'user', content: userPrompt },
+          ],
+        });
+
+        try {
+          for await (const delta of result.textStream) {
+            full += delta;
+            controller.enqueue(encodeEvent({ type: 'text', value: delta }));
+          }
+        } catch (err) {
+          streamError = err instanceof Error ? err.message : 'LLM stream failed';
+          controller.enqueue(encodeEvent({ type: 'error', message: streamError }));
+        }
+
+        const initialCitations = verifyCitations(full, rankedChunks);
+        const citedTitles = Array.from(
+          new Set(
+            rankedChunks
+              .map((c) => c.documentTitle ?? c.documentFilename ?? null)
+              .filter((t): t is string => Boolean(t)),
+          ),
+        );
+        const [citations, newTitle, followups] = await Promise.all([
+          streamError
+            ? Promise.resolve(initialCitations)
+            : checkEntailment(full, initialCitations, rankedChunks),
+          isFirstExchange && !streamError
+            ? generateConversationTitle(lastUser.content, full)
+            : Promise.resolve(null),
+          streamError
+            ? Promise.resolve<string[]>([])
+            : generateFollowUps({
+                question: lastUser.content,
+                answer: full,
+                titles: citedTitles,
+              }),
+        ]);
+        const persistedContent = streamError
+          ? `${full}\n\n[The response was cut off: ${streamError}]`
+          : full;
+
+        await supabase.from('messages').insert({
+          conversation_id: convId,
+          role: 'assistant',
+          content: persistedContent,
+          citations: citations as unknown as Json,
+        });
+
+        if (newTitle) {
+          await supabase.from('conversations').update({ title: newTitle }).eq('id', convId);
+        }
+
+        controller.enqueue(
+          encodeEvent({ type: 'meta', conversationId: convId, citations, followups }),
+        );
+        controller.close();
       } catch (err) {
-        streamError = err instanceof Error ? err.message : 'LLM stream failed';
-        controller.enqueue(encodeEvent({ type: 'error', message: streamError }));
+        const message = err instanceof Error ? err.message : 'Chat pipeline failed';
+        controller.enqueue(encodeEvent({ type: 'error', message }));
+        controller.close();
       }
-
-      // Strict-grounding safeguard #3: verify every [N] marker maps to
-      // a real source, then check entailment — does the cited chunk
-      // actually support the claim? Closes the "illusion of groundedness"
-      // gap where an LLM cites [3] but the claim has drifted from what
-      // chunk 3 says. Marker-is-real → valid until entailment flips it.
-      //
-      // We also run conversation title generation in parallel for the
-      // first exchange — same LLM, same network, same ~1s round-trip
-      // as the entailment check, so it's effectively free from a
-      // user-perceived latency perspective.
-      const initialCitations = verifyCitations(full, rankedChunks);
-      const citedTitles = Array.from(
-        new Set(
-          rankedChunks
-            .map((c) => c.documentTitle ?? c.documentFilename ?? null)
-            .filter((t): t is string => Boolean(t)),
-        ),
-      );
-      const [citations, newTitle, followups] = await Promise.all([
-        streamError
-          ? Promise.resolve(initialCitations)
-          : checkEntailment(full, initialCitations, rankedChunks),
-        isFirstExchange && !streamError
-          ? generateConversationTitle(lastUser.content, full)
-          : Promise.resolve(null),
-        streamError
-          ? Promise.resolve<string[]>([])
-          : generateFollowUps({
-              question: lastUser.content,
-              answer: full,
-              titles: citedTitles,
-            }),
-      ]);
-      const persistedContent = streamError
-        ? `${full}\n\n[The response was cut off: ${streamError}]`
-        : full;
-
-      await supabase.from('messages').insert({
-        conversation_id: convId,
-        role: 'assistant',
-        content: persistedContent,
-        citations: citations as unknown as Json,
-      });
-
-      // Replace the default "first 60 chars of user question" title
-      // with the LLM-generated topic title. Falls through silently on
-      // failure; the existing slice-based title stays in place.
-      if (newTitle) {
-        await supabase.from('conversations').update({ title: newTitle }).eq('id', convId);
-      }
-
-      controller.enqueue(
-        encodeEvent({ type: 'meta', conversationId: convId, citations, followups }),
-      );
-      controller.close();
     },
   });
 
-  return new Response(stream, {
+  return new Response(ragStream, {
     headers: { 'content-type': 'application/x-ndjson' },
   });
 }
