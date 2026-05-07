@@ -17,6 +17,7 @@ import { applySectionBias, detectQueryIntent } from '@/lib/retrieval/section-bia
 import { applyThreshold } from '@/lib/retrieval/threshold';
 import { createServerSupabase } from '@/lib/supabase/server';
 import type { Json } from '@/lib/supabase/types';
+import { rejectAfterTimeout, resolveAfterTimeout } from '@/lib/with-timeout';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -78,6 +79,11 @@ function encodeEvent(event: StreamEvent): Uint8Array {
 // That falsely advertised the corpus and is now removed.
 const REFUSAL_MESSAGE =
   "I'm Sir Sohail Agent — I only answer from the closed library of papers Prof. Sohail has loaded (innovation education, entrepreneurship pedagogy, project-based learning). This question isn't covered, so I'll decline rather than guess. Try rephrasing, or ask about a topic the library covers.";
+
+// Hard ceilings — hung Gemini or Supabase must not strand the client after `ack`.
+const SEARCH_TIMEOUT_MS = 45_000;
+const RERANK_TIMEOUT_MS = 25_000;
+const POST_STREAM_LLM_MS = 28_000;
 
 export async function POST(req: Request) {
   const parsed = BodySchema.safeParse(await req.json().catch(() => null));
@@ -164,54 +170,43 @@ export async function POST(req: Request) {
     .from('messages')
     .insert({ conversation_id: convId, role: 'user', content: lastUser.content });
 
-  // Intent router — runs BEFORE retrieval. Classifies the latest
-  // message into {research, greeting, thanks, farewell, meta,
-  // emotional, other}. Research falls through to the grounded RAG
-  // pipeline below (safeguards #1–#3 intact). Non-research returns a
-  // curated canned reply — the LLM never authors user-visible text
-  // on this path, so factual claims cannot leak.
-  const intent = await routeIntent({ history: priorHistory, latest: lastUser.content });
-  if (intent.kind === 'conversational') {
-    await supabase.from('messages').insert({
-      conversation_id: convId,
-      role: 'assistant',
-      content: intent.reply,
-      citations: [] as unknown as Json,
-    });
-
-    const convStream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(encodeEvent({ type: 'text', value: intent.reply }));
-        controller.enqueue(
-          encodeEvent({ type: 'meta', conversationId: convId, citations: [], followups: [] }),
-        );
-        controller.close();
-      },
-    });
-    return new Response(convStream, {
-      headers: { 'content-type': 'application/x-ndjson' },
-    });
-  }
-
   const e = env();
 
-  // Open the response body immediately with an `ack` line so the client
-  // stops looking "stuck" while embed → RPC → rerank runs (often 2–8s).
-  // Previously all of that work finished before `return new Response`,
-  // so fetch had no bytes until the answer model started — empty bubble +
-  // easy to mistake for "no reply". Same total server time, much better UX.
-  const ragStream = new ReadableStream({
+  // Single stream for every intent: enqueue `ack` before *any* await so the client
+  // receives bytes immediately (intent classification used to block 0–12s with no
+  // response body — identical “no reply” symptoms to Gemini stalls).
+  const chatStream = new ReadableStream({
     async start(controller) {
       controller.enqueue(encodeEvent({ type: 'ack' }));
-      let full = '';
-      let streamError: string | null = null;
-      let rankedChunks: SearchResult[] | null = null;
-
       try {
-        const rawResults = await searchChunks(lastUser.content, {
-          topK: e.RETRIEVAL_CANDIDATE_K,
-          similarityThreshold: 0,
-        });
+        const intent = await routeIntent({ history: priorHistory, latest: lastUser.content });
+        if (intent.kind === 'conversational') {
+          await supabase.from('messages').insert({
+            conversation_id: convId,
+            role: 'assistant',
+            content: intent.reply,
+            citations: [] as unknown as Json,
+          });
+          controller.enqueue(encodeEvent({ type: 'text', value: intent.reply }));
+          controller.enqueue(
+            encodeEvent({ type: 'meta', conversationId: convId, citations: [], followups: [] }),
+          );
+          controller.close();
+          return;
+        }
+
+        let full = '';
+        let streamError: string | null = null;
+        let rankedChunks: SearchResult[] | null = null;
+
+        const rawResults = await rejectAfterTimeout(
+          searchChunks(lastUser.content, {
+            topK: e.RETRIEVAL_CANDIDATE_K,
+            similarityThreshold: 0,
+          }),
+          SEARCH_TIMEOUT_MS,
+          'Retrieval (embedding + database search)',
+        );
         const gated = applyThreshold(rawResults, e.RETRIEVAL_SIMILARITY_THRESHOLD);
 
         if (!gated.grounded) {
@@ -231,9 +226,12 @@ export async function POST(req: Request) {
 
         const queryIntent = detectQueryIntent(lastUser.content);
         const biased = applySectionBias(gated.results, queryIntent);
-        rankedChunks = await rerankChunks(lastUser.content, biased, {
-          topK: e.RETRIEVAL_TOP_K,
-        });
+        rankedChunks = await Promise.race([
+          rerankChunks(lastUser.content, biased, { topK: e.RETRIEVAL_TOP_K }),
+          new Promise<SearchResult[]>((resolve) =>
+            setTimeout(() => resolve(biased.slice(0, e.RETRIEVAL_TOP_K)), RERANK_TIMEOUT_MS),
+          ),
+        ]);
 
         const userPrompt = buildPrompt({
           chunks: rankedChunks,
@@ -267,20 +265,33 @@ export async function POST(req: Request) {
               .filter((t): t is string => Boolean(t)),
           ),
         );
+
         const [citations, newTitle, followups] = await Promise.all([
           streamError
             ? Promise.resolve(initialCitations)
-            : checkEntailment(full, initialCitations, rankedChunks),
+            : resolveAfterTimeout(
+                checkEntailment(full, initialCitations, rankedChunks),
+                POST_STREAM_LLM_MS,
+                initialCitations,
+              ),
           isFirstExchange && !streamError
-            ? generateConversationTitle(lastUser.content, full)
+            ? resolveAfterTimeout(
+                generateConversationTitle(lastUser.content, full),
+                POST_STREAM_LLM_MS,
+                null,
+              )
             : Promise.resolve(null),
           streamError
             ? Promise.resolve<string[]>([])
-            : generateFollowUps({
-                question: lastUser.content,
-                answer: full,
-                titles: citedTitles,
-              }),
+            : resolveAfterTimeout(
+                generateFollowUps({
+                  question: lastUser.content,
+                  answer: full,
+                  titles: citedTitles,
+                }),
+                POST_STREAM_LLM_MS,
+                [],
+              ),
         ]);
         const persistedContent = streamError
           ? `${full}\n\n[The response was cut off: ${streamError}]`
@@ -309,7 +320,12 @@ export async function POST(req: Request) {
     },
   });
 
-  return new Response(ragStream, {
-    headers: { 'content-type': 'application/x-ndjson' },
+  return new Response(chatStream, {
+    headers: {
+      'content-type': 'application/x-ndjson',
+      'Cache-Control': 'no-store, no-transform',
+      // Hint for reverse proxies not to buffer the body (streaming NDJSON).
+      'X-Accel-Buffering': 'no',
+    },
   });
 }
