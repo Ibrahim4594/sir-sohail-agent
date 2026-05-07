@@ -90,7 +90,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const supabase = await createServerSupabase();
+  // `createServerSupabase()` reads `env()` internally. Calling it before a
+  // guarded `env()` parse meant a schema miss (wrong/missing `.env.local`)
+  // threw *outside* the catch below → generic Next.js 500 with no JSON body.
+  let e: ReturnType<typeof env>;
+  try {
+    e = env();
+  } catch (envErr) {
+    // #region agent log
+    fetch('http://127.0.0.1:7752/ingest/09b7bf43-51ef-4f46-91e2-9cdef0f56df5', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '63f3f2' },
+      body: JSON.stringify({
+        sessionId: '63f3f2',
+        runId: '500-investigation',
+        hypothesisId: 'H8',
+        location: 'app/api/chat/route.ts:POST:before-supabase',
+        message: 'env() parse failed (pre-createServerSupabase guard)',
+        data: {
+          err: envErr instanceof Error ? envErr.message : String(envErr),
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
+
+  const supabase = await createServerSupabase(e);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -155,6 +182,25 @@ export async function POST(req: Request) {
       .select('id')
       .single();
     if (convErr || !conv) {
+      // #region agent log
+      fetch('http://127.0.0.1:7752/ingest/09b7bf43-51ef-4f46-91e2-9cdef0f56df5', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '63f3f2' },
+        body: JSON.stringify({
+          sessionId: '63f3f2',
+          runId: '500-investigation',
+          hypothesisId: 'H6',
+          location: 'app/api/chat/route.ts:conv-insert',
+          message: 'chat 500: conversations insert failed',
+          data: {
+            code: convErr?.code ?? null,
+            hint: convErr?.hint ?? null,
+            pgMessage: convErr?.message ?? null,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       return NextResponse.json(
         { error: convErr?.message ?? 'Failed to create conversation' },
         { status: 500 },
@@ -185,30 +231,6 @@ export async function POST(req: Request) {
   await supabase
     .from('messages')
     .insert({ conversation_id: convId, role: 'user', content: lastUser.content });
-
-  let e: ReturnType<typeof env>;
-  try {
-    e = env();
-  } catch (envErr) {
-    // #region agent log
-    fetch('http://127.0.0.1:7752/ingest/09b7bf43-51ef-4f46-91e2-9cdef0f56df5', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '63f3f2' },
-      body: JSON.stringify({
-        sessionId: '63f3f2',
-        runId: 'pre-fix',
-        hypothesisId: 'H1',
-        location: 'app/api/chat/route.ts:env',
-        message: 'env() parse failed (missing/invalid server env)',
-        data: {
-          err: envErr instanceof Error ? envErr.message : String(envErr),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-  }
 
   // #region agent log
   fetch('http://127.0.0.1:7752/ingest/09b7bf43-51ef-4f46-91e2-9cdef0f56df5', {
