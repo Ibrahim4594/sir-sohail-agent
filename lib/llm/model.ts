@@ -19,10 +19,8 @@ function getGoogle() {
 }
 
 /**
- * The answer model — Gemini 3.1 Pro by default. Used for the single
- * user-facing generation call (the streamed response in
- * app/api/chat/route.ts). Quality matters most here, so we pay the
- * Pro price.
+ * The answer model — Gemini 2.5 Flash by default (`env().GEMINI_MODEL`).
+ * Flash avoids frequent 503s on preview Pro tiers during demand spikes.
  */
 export function getChatModel(): LanguageModel {
   return getGoogle()(env().GEMINI_MODEL);
@@ -39,7 +37,7 @@ export function getChatModel(): LanguageModel {
  * scoring tasks where Flash is indistinguishable from Pro and ~10x
  * cheaper. The OCR script (scripts/ingest-ocr.ts) deliberately uses
  * getChatModel() instead because transcription quality benefits
- * from Pro.
+ * from a larger model via GEMINI_MODEL if needed.
  */
 export function getHelperModel(): LanguageModel {
   return getGoogle()(env().GEMINI_HELPER_MODEL);

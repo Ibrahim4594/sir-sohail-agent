@@ -17,7 +17,7 @@ describe('getChatModel', () => {
   });
 
   it('returns a Google model backed by the configured Gemini id', async () => {
-    process.env.GEMINI_MODEL = 'gemini-3.1-pro-preview';
+    process.env.GEMINI_MODEL = 'gemini-2.5-flash';
     const { getChatModel } = await import('./model');
     const model = getChatModel();
     expect(model).toBeDefined();

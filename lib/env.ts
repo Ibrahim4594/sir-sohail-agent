@@ -13,7 +13,8 @@ const schema = z.object({
   // used for the four cheap pipeline calls (intent router, LLM-as-
   // judge reranker, entailment audit, title + follow-up generation)
   // where Flash quality is sufficient and the cost difference is ~10x.
-  GEMINI_MODEL: z.string().default('gemini-3.1-pro-preview'),
+  // Default to 2.5 Flash — reliably available; Pro preview often returns 503 at peak load.
+  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
   GEMINI_HELPER_MODEL: z.string().default('gemini-flash-latest'),
   // gemini-embedding-001 natively outputs 3072 dims; we ask for 768
   // via outputDimensionality in getEmbeddingModel() so the stored
