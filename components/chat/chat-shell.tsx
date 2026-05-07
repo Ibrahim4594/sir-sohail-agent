@@ -131,6 +131,10 @@ export function ChatShell({
       let buffer = '';
       let finalId: string | undefined = convId;
       let firstByteSeen = false;
+      // `ack` alone is not a reply — if the stream dies after only `ack`
+      // (typical: serverless wall-clock kill mid-pipeline), we must not
+      // leave an empty bubble with no error.
+      let receivedSubstantive = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -153,9 +157,11 @@ export function ChatShell({
           if (event.type === 'ack') {
             // Server opened the stream while retrieval/rerank runs — no content yet.
           } else if (event.type === 'text') {
+            if (event.value) receivedSubstantive = true;
             tokenBuffer += event.value;
             scheduleFlush();
           } else if (event.type === 'meta') {
+            receivedSubstantive = true;
             // Flush any buffered tokens before committing the meta
             // event so citations never land before their text.
             flushNow();
@@ -168,6 +174,7 @@ export function ChatShell({
               streaming: false,
             }));
           } else if (event.type === 'error') {
+            receivedSubstantive = true;
             flushNow();
             updateAssistant((m) => ({ ...m, error: event.message, streaming: false }));
           }
@@ -175,7 +182,17 @@ export function ChatShell({
       }
 
       flushNow();
-      updateAssistant((m) => ({ ...m, streaming: false }));
+      updateAssistant((m) => {
+        const emptyReply = !m.content.trim();
+        const silentDrop = firstByteSeen && !receivedSubstantive && emptyReply && !m.error;
+        return {
+          ...m,
+          streaming: false,
+          error: silentDrop
+            ? 'The reply stopped before any text arrived. On Vercel Hobby this is usually a ~10s function limit hitting embed/rerank/LLM mid-request — upgrade compute or retry. Gemini outages and bad Supabase RPC config also surface here; check logs.'
+            : m.error,
+        };
+      });
 
       if (!initialId && finalId) router.replace(`/chat/${finalId}`);
       router.refresh();
