@@ -20,6 +20,11 @@ import type { Json } from '@/lib/supabase/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// Ingest caps at 300s; chat needs enough headroom for embed → retrieval → rerank →
+// streamed answer → entailment + title + follow-ups. Without this, Vercel's default
+// function limit (often 10s on Hobby) aborts mid-request — client looks like "no reply"
+// or a dropped stream even when Gemini eventually responds.
+export const maxDuration = 120;
 
 // Rate limit: each authenticated user can issue at most CHAT_RATE_LIMIT
 // requests within CHAT_RATE_WINDOW_MS. A single research request costs

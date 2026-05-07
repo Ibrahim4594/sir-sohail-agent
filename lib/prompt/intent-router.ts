@@ -31,6 +31,24 @@ export type IntentResult = { kind: 'research' } | { kind: 'conversational'; repl
 
 type ConvIntent = 'greeting' | 'thanks' | 'farewell' | 'meta' | 'emotional' | 'other';
 
+const CLASSIFIER_TIMEOUT_MS = 12_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const id = setTimeout(() => reject(new Error('intent-classifier-timeout')), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(id);
+        resolve(v);
+      },
+      (e: unknown) => {
+        clearTimeout(id);
+        reject(e);
+      },
+    );
+  });
+}
+
 // All conversational categories emit a curated reply. The LLM never
 // authors user-visible text in this path. Keep these short, warm,
 // and scrupulously free of any factual claim — no numbers, no
@@ -45,6 +63,37 @@ const CANNED_REPLIES: Record<ConvIntent, string> = {
   other:
     "Happy to chat briefly, but I'm built for one thing: answering from Prof. Sohail's library with citations. Want to try a research question?",
 };
+
+/**
+ * Skip the LLM for unambiguous single-line conversational openers so the first
+ * stream byte isn't blocked on Gemini (timeouts / regional cold starts bite
+ * hardest on greetings like "hey").
+ * Whole-message patterns only — "hey what is PBL" still goes to research.
+ */
+function conversationalFastPath(latest: string): IntentResult | null {
+  const s = latest.trim().replace(/\s+/g, ' ');
+  if (!s) return null;
+
+  if (/^(hey|hi|hello|yo)( there)?[!.]?$/i.test(s)) {
+    return { kind: 'conversational', reply: CANNED_REPLIES.greeting };
+  }
+  if (/^(good (morning|afternoon|evening)|gm|gn)[!.]?$/i.test(s)) {
+    return { kind: 'conversational', reply: CANNED_REPLIES.greeting };
+  }
+  if (/^(what'?s up|sup)\??$/i.test(s)) {
+    return { kind: 'conversational', reply: CANNED_REPLIES.greeting };
+  }
+  if (/^(thanks?|thank you|thx|cheers)[!.]?$/i.test(s)) {
+    return { kind: 'conversational', reply: CANNED_REPLIES.thanks };
+  }
+  if (/^(bye|goodbye|see you|cya|later|i'?m out)[!.]?$/i.test(s)) {
+    return { kind: 'conversational', reply: CANNED_REPLIES.farewell };
+  }
+  if (/^(who are you|what can you do|how do you work)(\?|\.)?$/i.test(s)) {
+    return { kind: 'conversational', reply: CANNED_REPLIES.meta };
+  }
+  return null;
+}
 
 const TAGS = {
   research: '[[RESEARCH]]',
@@ -118,21 +167,27 @@ export async function routeIntent({
 
     const sanitizedLatest = strip(latest);
 
-    const { text } = await generateText({
-      model: getHelperModel(),
-      system: INTENT_SYSTEM_PROMPT,
-      messages: [
-        ...history.slice(-4).map((m) => ({
-          role: m.role,
-          content: strip(m.content),
-        })),
-        { role: 'user' as const, content: sanitizedLatest },
-      ],
-      // Classifier output is a single token, ~14 chars. Keep the cap
-      // tight — stops a runaway LLM from drifting into an answer.
-      // biome-ignore lint/suspicious/noExplicitAny: maxOutputTokens varies by provider
-      ...({ maxOutputTokens: 24 } as any),
-    });
+    const immediate = conversationalFastPath(sanitizedLatest);
+    if (immediate) return immediate;
+
+    const { text } = await withTimeout(
+      generateText({
+        model: getHelperModel(),
+        system: INTENT_SYSTEM_PROMPT,
+        messages: [
+          ...history.slice(-4).map((m) => ({
+            role: m.role,
+            content: strip(m.content),
+          })),
+          { role: 'user' as const, content: sanitizedLatest },
+        ],
+        // Classifier output is a single token, ~14 chars. Keep the cap
+        // tight — stops a runaway LLM from drifting into an answer.
+        // biome-ignore lint/suspicious/noExplicitAny: maxOutputTokens varies by provider
+        ...({ maxOutputTokens: 24 } as any),
+      }),
+      CLASSIFIER_TIMEOUT_MS,
+    );
 
     const trimmed = text.trim().toUpperCase();
 
