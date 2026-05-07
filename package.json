@@ -16,6 +16,7 @@
     "db:types": ".tools/supabase.exe gen types typescript --linked 2>/dev/null | grep -v \"^Initialising\" > lib/supabase/types.ts",
     "db:reset": ".tools/supabase.exe db reset --linked",
     "ingest:corpus": "tsx --env-file=.env.local scripts/ingest-corpus.ts",
+    "verify:apis": "tsx --env-file=.env.local scripts/verify-apis.ts",
     "sync-pdf-worker": "node scripts/sync-pdf-worker.mjs",
     "postinstall": "node scripts/sync-pdf-worker.mjs"
   },
