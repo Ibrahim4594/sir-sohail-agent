@@ -4,8 +4,14 @@ import { ingestDocument } from '@/lib/ingest/ingest-document';
 import { createServiceRoleSupabase } from '@/lib/supabase/server';
 
 async function main() {
-  const pdfDir = path.resolve('pdfs');
-  const files = (await readdir(pdfDir)).filter((f) => f.toLowerCase().endsWith('.pdf'));
+  const inputDir = process.argv[2] ?? 'pdfs';
+  const onlyFiles = new Set(process.argv.slice(3).map((f) => f.toLowerCase()));
+  const pdfDir = path.resolve(inputDir);
+  const files = (await readdir(pdfDir)).filter((f) => {
+    if (!f.toLowerCase().endsWith('.pdf')) return false;
+    if (onlyFiles.size === 0) return true;
+    return onlyFiles.has(f.toLowerCase());
+  });
   console.log(`Found ${files.length} PDFs in ${pdfDir}`);
 
   const supabase = createServiceRoleSupabase();

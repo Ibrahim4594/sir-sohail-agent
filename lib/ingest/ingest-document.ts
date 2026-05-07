@@ -7,6 +7,17 @@ import { type Section, segmentPagesBySection } from './sections';
 
 const CHUNK_OPTS = { targetChars: 2000, overlapChars: 200 };
 
+function sanitizeForPostgres(value: string): string {
+  return (
+    value
+      // Remove NUL bytes that Postgres text cannot store.
+      .replace(/\u0000/g, '')
+      // Remove isolated UTF-16 surrogates that can appear in OCR/PDF extraction noise.
+      .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '')
+      .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
+  );
+}
+
 export type IngestInput = {
   filename: string;
   title?: string;
@@ -66,7 +77,12 @@ export async function ingestDocument(input: IngestInput): Promise<IngestResult> 
       const chunks = chunkPage(span.text, CHUNK_OPTS);
       for (const chunk of chunks) {
         const idx = indexPerPage.get(span.page) ?? 0;
-        staged.push({ page: span.page, index: idx, content: chunk, section: span.section });
+        staged.push({
+          page: span.page,
+          index: idx,
+          content: sanitizeForPostgres(chunk),
+          section: span.section,
+        });
         indexPerPage.set(span.page, idx + 1);
       }
     }
