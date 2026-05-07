@@ -53,6 +53,7 @@ export function ChatShell({
     // reading `messages` from state here would give us a stale value
     // inside a queueMicrotask/useCallback path.
     const snapshot = opts.snapshot ?? messages;
+    const hadPriorAssistantInSnapshot = snapshot.some((m) => m.role === 'assistant');
     let userMsg: UIMessage;
     let workingMessages: UIMessage[];
     if (opts.regenerate) {
@@ -124,7 +125,38 @@ export function ChatShell({
       });
 
       if (!res.ok || !res.body) {
-        throw new Error(`Chat request failed (${res.status})`);
+        let detail = '';
+        try {
+          const ct = res.headers.get('content-type');
+          if (ct?.includes('application/json')) {
+            const j = (await res.clone().json()) as { error?: string };
+            detail = j.error ?? '';
+          } else {
+            detail = (await res.clone().text()).slice(0, 800);
+          }
+        } catch {
+          /* ignore parse errors */
+        }
+        // #region agent log
+        fetch('http://127.0.0.1:7752/ingest/09b7bf43-51ef-4f46-91e2-9cdef0f56df5', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '63f3f2' },
+          body: JSON.stringify({
+            sessionId: '63f3f2',
+            runId: '500-investigation',
+            hypothesisId: 'H-500-CLIENT',
+            location: 'components/chat/chat-shell.tsx:fetch',
+            message: 'chat fetch non-OK',
+            data: { status: res.status, detail: detail.slice(0, 500) },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+        throw new Error(
+          detail
+            ? `Chat request failed (${res.status}): ${detail}`
+            : `Chat request failed (${res.status})`,
+        );
       }
 
       const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
@@ -194,8 +226,36 @@ export function ChatShell({
         };
       });
 
-      if (!initialId && finalId) router.replace(`/chat/${finalId}`);
-      router.refresh();
+      const navigatedNewConversation = Boolean(!initialId && finalId);
+      const firstAssistantInThread = !hadPriorAssistantInSnapshot;
+      if (navigatedNewConversation && finalId) {
+        router.replace(`/chat/${finalId}`);
+      }
+      // `router.refresh()` re-fetches all Server Components in the segment (including
+      // the heavy `Sidebar` query). Running it after every streamed turn made the app
+      // feel like it was constantly reloading / glitching.
+      if (navigatedNewConversation || firstAssistantInThread) {
+        router.refresh();
+      }
+      // #region agent log
+      fetch('http://127.0.0.1:7752/ingest/09b7bf43-51ef-4f46-91e2-9cdef0f56df5', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '63f3f2' },
+        body: JSON.stringify({
+          sessionId: '63f3f2',
+          runId: 'reload-investigation',
+          hypothesisId: 'H-RELOAD',
+          location: 'components/chat/chat-shell.tsx:send',
+          message: 'post-stream router actions',
+          data: {
+            navigatedNewConversation,
+            firstAssistantInThread,
+            didRefresh: navigatedNewConversation || firstAssistantInThread,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
     } catch (e) {
       const aborted = controller.signal.aborted;
       // Distinguish user-stop ("user") from timeout ("timeout") so the
