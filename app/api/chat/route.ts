@@ -21,10 +21,9 @@ import { rejectAfterTimeout, resolveAfterTimeout } from '@/lib/with-timeout';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-// Ingest caps at 300s; chat needs enough headroom for embed → retrieval → rerank →
-// streamed answer → entailment + title + follow-ups. Without this, Vercel's default
-// function limit (often 10s on Hobby) aborts mid-request — client looks like "no reply"
-// or a dropped stream even when Gemini eventually responds.
+// Hobby caps at 60s; Pro can go higher (`vercel.json` + Dashboard). Explicit
+// `vercel.json` maxDuration avoids staying on Vercel’s 10s *default*, which kills
+// the chat handler mid-RAG (“no reply” / stream dies after `ack`).
 export const maxDuration = 120;
 
 // Rate limit: each authenticated user can issue at most CHAT_RATE_LIMIT
@@ -95,7 +94,24 @@ export async function POST(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) {
+    // #region agent log
+    fetch('http://127.0.0.1:7752/ingest/09b7bf43-51ef-4f46-91e2-9cdef0f56df5', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '63f3f2' },
+      body: JSON.stringify({
+        sessionId: '63f3f2',
+        runId: 'pre-fix',
+        hypothesisId: 'H2',
+        location: 'app/api/chat/route.ts:POST',
+        message: 'chat aborted: no authenticated user',
+        data: {},
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   // Per-user rate limit. Applied AFTER auth so we don't penalise keys
   // that aren't authenticated anyway (those get 401 above).
@@ -170,7 +186,50 @@ export async function POST(req: Request) {
     .from('messages')
     .insert({ conversation_id: convId, role: 'user', content: lastUser.content });
 
-  const e = env();
+  let e: ReturnType<typeof env>;
+  try {
+    e = env();
+  } catch (envErr) {
+    // #region agent log
+    fetch('http://127.0.0.1:7752/ingest/09b7bf43-51ef-4f46-91e2-9cdef0f56df5', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '63f3f2' },
+      body: JSON.stringify({
+        sessionId: '63f3f2',
+        runId: 'pre-fix',
+        hypothesisId: 'H1',
+        location: 'app/api/chat/route.ts:env',
+        message: 'env() parse failed (missing/invalid server env)',
+        data: {
+          err: envErr instanceof Error ? envErr.message : String(envErr),
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
+
+  // #region agent log
+  fetch('http://127.0.0.1:7752/ingest/09b7bf43-51ef-4f46-91e2-9cdef0f56df5', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '63f3f2' },
+    body: JSON.stringify({
+      sessionId: '63f3f2',
+      runId: 'pre-fix',
+      hypothesisId: 'H1',
+      location: 'app/api/chat/route.ts:POST',
+      message: 'chat stream starting (env ok, models configured)',
+      data: {
+        qLen: lastUser.content.length,
+        chatModel: e.GEMINI_MODEL,
+        helperModel: e.GEMINI_HELPER_MODEL,
+        embeddingModel: e.GEMINI_EMBEDDING_MODEL,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   // Single stream for every intent: enqueue `ack` before *any* await so the client
   // receives bytes immediately (intent classification used to block 0–12s with no
@@ -180,6 +239,21 @@ export async function POST(req: Request) {
       controller.enqueue(encodeEvent({ type: 'ack' }));
       try {
         const intent = await routeIntent({ history: priorHistory, latest: lastUser.content });
+        // #region agent log
+        fetch('http://127.0.0.1:7752/ingest/09b7bf43-51ef-4f46-91e2-9cdef0f56df5', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '63f3f2' },
+          body: JSON.stringify({
+            sessionId: '63f3f2',
+            runId: 'pre-fix',
+            hypothesisId: 'H5',
+            location: 'app/api/chat/route.ts:stream:intent',
+            message: 'routeIntent settled',
+            data: { intentKind: intent.kind },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
         if (intent.kind === 'conversational') {
           await supabase.from('messages').insert({
             conversation_id: convId,
@@ -208,6 +282,25 @@ export async function POST(req: Request) {
           'Retrieval (embedding + database search)',
         );
         const gated = applyThreshold(rawResults, e.RETRIEVAL_SIMILARITY_THRESHOLD);
+        // #region agent log
+        fetch('http://127.0.0.1:7752/ingest/09b7bf43-51ef-4f46-91e2-9cdef0f56df5', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '63f3f2' },
+          body: JSON.stringify({
+            sessionId: '63f3f2',
+            runId: 'pre-fix',
+            hypothesisId: 'H3',
+            location: 'app/api/chat/route.ts:stream:retrieval',
+            message: 'embed+search_chunks completed',
+            data: {
+              rawCount: rawResults.length,
+              grounded: gated.grounded,
+              postGateCount: gated.results.length,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
 
         if (!gated.grounded) {
           await supabase.from('messages').insert({
@@ -256,6 +349,25 @@ export async function POST(req: Request) {
           streamError = err instanceof Error ? err.message : 'LLM stream failed';
           controller.enqueue(encodeEvent({ type: 'error', message: streamError }));
         }
+        // #region agent log
+        fetch('http://127.0.0.1:7752/ingest/09b7bf43-51ef-4f46-91e2-9cdef0f56df5', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '63f3f2' },
+          body: JSON.stringify({
+            sessionId: '63f3f2',
+            runId: 'pre-fix',
+            hypothesisId: 'H4',
+            location: 'app/api/chat/route.ts:stream:answer',
+            message: 'main answer streamText finished',
+            data: {
+              answerChars: full.length,
+              streamError,
+              rankedK: rankedChunks?.length ?? 0,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
 
         const initialCitations = verifyCitations(full, rankedChunks);
         const citedTitles = Array.from(
@@ -314,6 +426,21 @@ export async function POST(req: Request) {
         controller.close();
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Chat pipeline failed';
+        // #region agent log
+        fetch('http://127.0.0.1:7752/ingest/09b7bf43-51ef-4f46-91e2-9cdef0f56df5', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '63f3f2' },
+          body: JSON.stringify({
+            sessionId: '63f3f2',
+            runId: 'pre-fix',
+            hypothesisId: 'H3',
+            location: 'app/api/chat/route.ts:stream:catch',
+            message: 'chat pipeline threw before/with stream',
+            data: { message },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
         controller.enqueue(encodeEvent({ type: 'error', message }));
         controller.close();
       }

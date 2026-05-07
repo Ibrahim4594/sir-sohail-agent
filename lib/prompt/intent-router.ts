@@ -31,7 +31,10 @@ export type IntentResult = { kind: 'research' } | { kind: 'conversational'; repl
 
 type ConvIntent = 'greeting' | 'thanks' | 'farewell' | 'meta' | 'emotional' | 'other';
 
-const CLASSIFIER_TIMEOUT_MS = 12_000;
+// Must stay safely under Vercel's default Node function wall-clock (often 10s on
+// Hobby) until `maxDuration` is applied — otherwise classify() can stall long
+// enough for the platform to SIGKILL mid-request (“no reply” after `ack`).
+const CLASSIFIER_TIMEOUT_MS = 6_500;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
