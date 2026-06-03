@@ -21,17 +21,19 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // getUser() can throw when @supabase/ssr's onAuthStateChange async
-  // callback fails to clear cookies (e.g. expired refresh token +
-  // Next.js 16 cookie-API edge cases). Catching here prevents the
-  // middleware from returning a 500 — treat auth failure as signed-out.
+  // Use getSession() not getUser() in middleware — getSession() reads the
+  // JWT from cookies (no network call, <1ms). getUser() makes an HTTP
+  // round-trip to Supabase Auth on every request, which blows Vercel's
+  // ~1s middleware timeout (MIDDLEWARE_INVOCATION_TIMEOUT / 504).
+  // Security note: getSession() trusts the cookie JWT without server
+  // verification; that's fine for redirect logic. Route handlers call
+  // getUser() to cryptographically verify before touching data.
   let user = null;
   try {
-    ({
-      data: { user },
-    } = await supabase.auth.getUser());
+    const { data } = await supabase.auth.getSession();
+    user = data.session?.user ?? null;
   } catch {
-    // auth error → treat as unauthenticated; redirect logic below handles it
+    // session parse error → treat as unauthenticated
   }
   return { response, user };
 }
